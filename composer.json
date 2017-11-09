@@ -1,0 +1,21 @@
+{
+    "name": "helmut-kleinhans/yii2-dbtools",
+    "description": "Database Backup and Restore functionality",
+    "type": "yii2-extension",
+    "keywords": ["yii2","Database", "Backup","Restore"],
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Helmut Kleinhans",
+            "email": "q.q@gmail.com"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "kleinhans\\modules\\dbtools\\": ""
+        }
+    }
+}
