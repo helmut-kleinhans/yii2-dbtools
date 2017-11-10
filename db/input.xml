@@ -1,0 +1,226 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dbvalues version='1.0'>
+    <cat name="TypeTraits">
+        <const name="int32Max" type="INT" value="2147483647"/>
+        <const name="int32Min" type="INT" value="-2147483648"/>
+    </cat>
+    <cat name="General">
+        <enum value="0">
+            <error name="NoError">Ok</error>
+            <error name="Error">internal error</error>
+            <error name="DomainSetWrong">domain set is wrong</error>
+            <error name="ValidationFailed">validation failed</error>
+        </enum>
+        <cat name="IpType" type="TINYINT UNSIGNED">
+            <const name="v4" value="2"></const>
+            <const name="v6" value="10"></const>
+        </cat>
+        <cat name="Token">
+            <cat name="Status" type="TINYINT UNSIGNED">
+                <const name="New" value="1"></const>
+                <const name="Updated" value="2"></const>
+            </cat>
+        </cat>
+    </cat>
+    <cat name="Domain">
+        <sql name="Config" db="dbSD" table="tbl_configkey4" colname="COK_cName" colvalue="COK_cName"/>
+        <enum value="100">
+            <error name="SetWrong">domain set is wrong</error>
+            <error name="NoSet">no domain set</error>
+        </enum>
+        <cat name="Config">
+            <enum value="150">
+                <error name="NotFound">domainset config not found</error>
+            </enum>
+        </cat>
+    </cat>
+    <sql name="Language" db="dbSD" table="tbl_language" colname="LNG_cNameFull" colvalue="LNG_iID"/>
+    <cat name="Casino">
+        <cat name="MoneyType" type="TINYINT UNSIGNED">
+            <const name="Real" value="0"></const>
+            <const name="Play" value="1"></const>
+        </cat>
+        <enum value="200">
+        </enum>
+        <cat name="Default" type="TINYINT UNSIGNED">
+            <const name="Id" value="1"></const>
+            <const name="SubSkin" value="0"></const>
+        </cat>
+    </cat>
+    <cat name="Player">
+        <enum value="1000">
+            <error name="MustChangePassword">player must change password</error>
+            <error name="UsernameOrPasswordWrong">username or password is wrong</error>
+            <error name="TokenInvalid">token is invalid</error>
+            <error name="NoAccount">no account found</error>
+            <error name="ScreennameUsed">screenname is already used</error>
+            <error name="ScreennameEmpty">screenname is empty</error>
+            <error name="UsernameUsed">username is already used</error>
+            <error name="UsernameEmpty">username is empty</error>
+            <error name="PasswordEmpty">password is empty</error>
+            <error name="PasswordNoMD5">password is no md5</error>
+            <error name="EmailUsed">email is already used</error>
+            <error name="EmailEmpty">email is empty</error>
+            <error name="AddPlayerFailed">failed to add player</error>
+            <error name="IsBlocked">player is blocked</error>
+            <error name="TokenExpired">token has expired</error>
+            <error name="LogoutFailed">logout failed</error>
+            <error name="InvalidBonusCode">invalid bonuscode</error>
+            <error name="UnknownUsernameOrEmail">unknown username or email</error>
+            <error name="WrongAnswer">wrong answer</error>
+            <error name="PlayerNotFound">player was not found</error>
+            <error name="WrongCode">wrong code</error>
+            <error name="NeedLogin">need login</error>
+            <error name="AlreadyLoggedIn">Already Logged In</error>
+        </enum>
+        <sql name="Gender" db="dbMM" table="gender" colname="name" colvalue="id"/>
+    </cat>
+    <cat name="Booking">
+        <sql name="MoneyType" db="dbMM" table="tbl_moneytype" colname="MTY_cName" colvalue="MTY_iID"/>
+        <enum value="3050">
+            <error name="CasinoAccountMissing"></error>
+        </enum>
+        <cat name="Validate">
+            <enum value="3000">
+                <error name="NegativeAmount"></error>
+                <error name="AmountToLow"></error>
+                <error name="AccountMissing"></error>
+                <error name="SameAccount"></error>
+                <error name="ExchangerateMissing"></error>
+                <error name="ExchangeToLow"></error>
+                <error name="NetworkAccountMissing"></error>
+                <error name="AccountSourceMissing"></error>
+                <error name="AccountTargetMissing"></error>
+                <error name="AccountTypeSourceMissing"></error>
+                <error name="AccountTypeTargetMissing"></error>
+                <error name="TooMuchMoney"></error>
+                <error name="NotEnoughMoney"></error>
+            </enum>
+        </cat>
+        <cat name="Transaction">
+            <enum value="3100">
+                <error name="IdInvalid"></error>
+                <error name="InvalidStatusChange"></error>
+                <error name="StatusChangeFailed"></error>
+                <error name="CreateFailed"></error>
+                <error name="InWrongState"></error>
+                <error name="TransferInsertFailed"></error>
+                <error name="TransferUpdateSourceFailed"></error>
+                <error name="TransferUpdateTargetFailed"></error>
+                <error name="RollbackAlreadyDone"></error>
+                <error name="WrongRollbackState"></error>
+            </enum>
+            <sql name="Status" db="dbSD" table="tbl_transactionstatus" colname="TRT_cName" colvalue="TRT_iID"/>
+        </cat>
+    </cat>
+    <cat name="Betslip">
+        <enum value="3200">
+            <error name="IdAlreadyProcessed"></error>
+            <error name="NotFound"></error>
+            <error name="WrongPlayer"></error>
+        </enum>
+        <cat name="Type" type="SMALLINT UNSIGNED">
+            <enum value="1">
+                <const name="Withdraw"></const>
+                <const name="Deposit"></const>
+                <const name="WithdrawCasino"></const>
+                <const name="DepositCasino"></const>
+                <const name="RollbackCasino"></const>
+            </enum>
+        </cat>
+        <sqlenum name="Status" db="dbMM" table="tbl_betslip" colenum="BTS_eStatus"/>
+    </cat>
+    <cat name="Casinogame">
+        <enum value="3300">
+            <error name="IdAlreadyProcessed"></error>
+            <error name="NotFound"></error>
+            <error name="WrongPlayer"></error>
+            <error name="WrongAmount"></error>
+        </enum>
+        <sql name="Category" db="dbMM" table="casinogames_categories" colname="CGC_cName" colvalue="CGC_iID"/>
+        <sql name="Provider" db="dbMM" table="tbl_casinogamesproviders" colname="CGP_cName" colvalue="CGP_iID"/>
+        <cat name="History">
+            <cat name="Mic">
+                <sqlenum name="PlayType" db="dbMM" table="casinogames_history_mic" colenum="CGH_ePlayType"/>
+            </cat>
+        </cat>
+        <cat name="Bonus">
+            <sql name="Type" db="dbMM" table="casinogames_bonus_type" colname="CBT_cName" colvalue="CBT_iID"/>
+        </cat>
+        <cat name="Include">
+            <sql name="Type" db="dbMM" table="casinogames_include_type" colname="name" colvalue="id"/>
+        </cat>
+    </cat>
+    <cat name="Payment">
+        <sql name="Type" db="dbMM" table="payment_type" colname="PYT_cName" colvalue="PYT_iID"/>
+    </cat>
+    <cat name="Account">
+        <sql name="Plan" db="dbMM" table="tbl_accountplan" colname="ACP_cName" colvalue="ACP_iID"/>
+        <sql name="Type" db="dbMM" table="tbl_accounttype" colname="ACT_cName" colvalue="ACT_iID"/>
+        <sql name="Status" db="dbMM" table="account_status_type" colname="name" colvalue="id"/>
+    </cat>
+    <cat name="JobQueue">
+        <sql name="Type" db="dbSD" table="tbl_jobqueuetype" colname="JQT_cText" colvalue="JQT_iID"/>
+    </cat>
+    <cat name="SportsBet">
+        <cat name="History">
+            <cat name="BetConstruct">
+                <sql name="Source" db="dbMM" table="sportsbet_history_betconstruct_source" colname="name" colvalue="id"/>
+                <sql name="State" db="dbMM" table="sportsbet_history_betconstruct_state" colname="name" colvalue="id"/>
+                <sql name="Type" db="dbMM" table="sportsbet_history_betconstruct_type" colname="name" colvalue="id"/>
+            </cat>
+        </cat>
+        <sql name="IncludeType" db="dbMM" table="sportsbet_include_type" colname="name" colvalue="id"/>
+        <sql name="Provider" db="dbMM" table="sportsbet_provider" colname="name" colvalue="id"/>
+        <sql name="Provider_Status" db="dbMM" table="sportsbet_provider_status" colname="name" colvalue="id"/>
+    </cat>
+    <cat name="Bonus">
+        <!-- ERRORS -->
+        <enum value="65000">
+            <error name="NotEligible"/>
+            <error name="InvalidTransactionId"/>
+            <error name="BonusTemplateInactive"/>
+            <error name="InvalidParameter"/>
+            <error name="InsertConstraintViolated"/>
+        </enum>
+        <!-- BIT FIELDS -->
+        <cat name="CasinoGame">
+            <cat name="ForfeitCondition" type="INT UNSIGNED">
+                <!-- <bitfield> -->
+                <const name="None" value="0"/>
+                <const name="BetOnWrongGame" bit="0"/>
+                <const name="BetTooLow" bit="1"/>
+                <const name="BetTooHigh" bit="2"/>
+                <!-- </bitfield> -->
+            </cat>
+        </cat>
+        <cat name="ForfeitCondition" type="INT UNSIGNED"> <!-- TODO: remove me -->
+            <!-- <bitfield> -->
+            <const name="None" value="0"/>
+            <const name="BetOnWrongGame" bit="0"/>
+            <const name="BetTooLow" bit="1"/>
+            <const name="BetTooHigh" bit="2"/>
+            <!-- </bitfield> -->
+        </cat>
+        <cat name="Sportsbet">
+            <cat name="ForfeitCondition" type="INT UNSIGNED">
+                <!-- <bitfield> -->
+                <const name="None" value="0"/>
+                <const name="BetOnForbiddenSport" bit="0"/>
+                <const name="BetOnForbiddenMarket" bit="1"/>
+                <const name="OddsTooLow" bit="2"/>
+                <!-- </bitfield> -->
+            </cat>
+        </cat>
+        <cat name="Product" type="INT UNSIGNED">
+            <!-- <bitfield> -->
+            <const name="CasinoGame" bit="0"/>
+            <const name="SportsBet" bit="1"/>
+            <!-- </bitfield> -->
+        </cat>
+        <!-- CONSTANT TABLES -->
+        <sql name="CalculateType" db="dbMM" table="bonus_calculate_type" colname="name" colvalue="id"/>
+        <sql name="ExpireType" db="dbMM" table="bonus_expire_type" colname="name" colvalue="id"/>
+        <sql name="TurnoverType" db="dbMM" table="bonus_turnover_type" colname="name" colvalue="id"/>
+    </cat>
+</dbvalues>
