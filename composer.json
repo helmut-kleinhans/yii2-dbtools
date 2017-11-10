@@ -17,10 +17,13 @@
     ],
     "require": {
         "yiisoft/yii2": "*",
-        "bower-asset/datatables.net": "*",
-        "bower-asset/datatables.net-plugins": "*",
-        "bower-asset/datatables.net-selects": "*",
-        "bower-asset/datatables.net-scroller": "*"
+        "bower-asset/datatables.net": ">=1.10.16",
+        "bower-asset/datatables.net-bs": ">=1.10.16",
+        "bower-asset/datatables.net-plugins": ">=1.10.16",
+        "bower-asset/datatables.net-scroller": ">=1.4.3",
+        "bower-asset/datatables.net-scroller-bs": ">=1.4.3",
+        "bower-asset/datatables.net-select": ">=1.2.3",
+        "bower-asset/datatables.net-select-bs": ">=1.2.3"
     },
     "autoload": {
         "psr-4": {
