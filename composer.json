@@ -16,8 +16,7 @@
         }
     ],
     "require": {
-        "yiisoft/yii2": "*",
-        "conquer/datatables": "*"
+        "yiisoft/yii2": "*"
     },
     "autoload": {
         "psr-4": {
