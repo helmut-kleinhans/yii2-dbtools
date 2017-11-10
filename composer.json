@@ -17,7 +17,7 @@
     ],
     "require": {
         "yiisoft/yii2": "*",
-        "borodulin/yii2-datatables": "*"
+        "conquer/datatables": "*"
     },
     "autoload": {
         "psr-4": {
