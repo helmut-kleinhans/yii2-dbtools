@@ -1,0 +1,277 @@
+#leftf {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 25%;
+    height: 100%;
+    overflow: auto;
+    z-index: 1000;
+    background-color: #eee;
+}
+
+#rightf {
+    width: 75%;
+    position: absolute;
+    right: 0;
+}
+
+html, body {
+    background-color: white;
+    font-family: arial, helvetica;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+html {
+    overflow: -moz-scrollbars-vertical;
+    overflow: scroll;
+    overflow-x: hidden;
+}
+/*
+fieldset {
+  border: none;
+  margin-bottom: 5px;
+  border-radius: 3px;
+  box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.4);
+}
+
+button {
+  background-color: #217333;
+  padding: 5px;
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-weight: bold;
+  margin: 3px;
+}
+
+optgroup {
+  background-color: rgb(104, 118, 135);
+  color: white;
+  font-weight: bold;
+  font-family: mono;
+  margin-top: 6px;
+  font-size: 0.8em;
+  margin-bottom: 2px;
+  padding: 3px 2px 0px 2px;
+}
+*/
+
+
+/****************************************************************
+* Toolbar
+****************************************************************/
+
+.tools {
+    position: fixed;
+    right: 10px;
+    top: 5px;
+    z-index: 100000;
+}
+
+/****************************************************************
+* Tabs
+****************************************************************/
+
+.area {
+    padding: 5px;
+    padding-top: 10px;
+    border: none;
+    background-color: #eee;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+    color: #555;
+    cursor: default;
+    border: 1px solid #ddd;
+    border-bottom-color: #efefef;
+    background-color: #efefef;
+}
+
+
+
+/****************************************************************
+* Data Table
+****************************************************************/
+
+.datatableicon {
+    width:24px;
+    height:24px;
+}
+
+tr.group,
+tr.group:hover {
+    background-color: #ddd !important;
+}
+
+
+
+
+/****************************************************************
+* Fancy Checkbox
+****************************************************************/
+
+
+/* Hiding the checkbox, but allowing it to be focused */
+.badgebox
+{
+    opacity: 0;
+}
+
+.badgebox + .badge
+{
+    /* Move the check mark away when unchecked */
+    text-indent: -999999px;
+    /* Makes the badge's width stay the same checked and unchecked */
+    width: 27px;
+}
+
+.badgebox:focus + .badge
+{
+    /* Set something to make the badge looks focused */
+    /* This really depends on the application, in my case it was: */
+
+    /* Adding a light border */
+    box-shadow: inset 0px 0px 5px;
+    /* Taking the difference out of the padding */
+}
+
+.badgebox:checked + .badge
+{
+    /* Move the check mark back when checked */
+    text-indent: 0;
+}
+
+
+/****************************************************************
+* Tri State Switch
+****************************************************************/
+
+.switch-line-wrapper {
+    all: initial;
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: auto
+}
+.switch-line-bg {
+    height: 10px;
+    background-color: #f5f5f5;
+    border: 2px solid #E8E8E8;
+    border-radius: 5px;
+}
+
+.switch-line-off,
+.switch-line-nc,
+.switch-line-on
+{
+    position: absolute;
+    height: 6px;
+    width: 40px;
+}
+.switch-line-off {
+    background-color: #d9534f;
+    left: 2px;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+.switch-line-nc {
+    background-color: #a9a9a9;
+    left: 40px;
+}
+.switch-line-on {
+    background-color: #5cb85c;
+    right: 2px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+/****************************************************************
+* Dropzone
+****************************************************************/
+
+.dropzonearea {
+    background-color: gray;
+}
+
+/****************************************************************
+* Diff tool
+****************************************************************/
+
+.diff td {
+    padding: 0 0.667em;
+    vertical-align: top;
+    white-space: pre;
+    white-space: pre-wrap;
+    font-family: Consolas, 'Courier New', Courier, monospace;
+    font-size: 0.75em;
+    line-height: 1.333;
+}
+
+.diff span {
+    display: block;
+    min-height: 1.333em;
+    margin-top: -1px;
+    padding: 0 3px;
+}
+
+* html .diff span {
+    height: 1.333em;
+}
+
+.diff span:first-child {
+    margin-top: 0;
+}
+
+.diffDeleted span {
+    border: 1px solid rgb(255, 192, 192);
+    background: rgb(255, 224, 224);
+}
+
+.diffInserted span {
+    border: 1px solid rgb(192, 255, 192);
+    background: rgb(224, 255, 224);
+}
+
+#toStringOutput {
+    margin: 0 2em 2em;
+}
+
+
+/****************************************************************
+* Tooltip
+****************************************************************/
+
+[tooltip]:before {
+    /* needed - do not touch */
+    content: attr(tooltip);
+    position: absolute;
+    opacity: 0;
+
+    /* customizable */
+    transition: all 0.15s ease;
+    padding: 10px;
+    color: #333;
+    border-radius: 10px;
+    box-shadow: 2px 2px 1px silver;
+    z-index: 1000;
+}
+
+[tooltip]:hover:before {
+    /* needed - do not touch */
+    opacity: 1;
+
+    /* customizable */
+    background: yellow;
+    margin-top: -50px;
+    margin-left: 20px;
+    z-index: 1000;
+}
+
+[tooltip]:not([tooltip-persistent]):before {
+    pointer-events: none;
+    z-index: 1000;
+}
