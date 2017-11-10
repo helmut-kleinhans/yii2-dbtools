@@ -15,7 +15,7 @@
         "bower-asset/datatables": "~1.10",
         "bower-asset/datatables-plugins": "~1.0",
         "bower-asset/datatables-selects": "~1.0",
-        "bower-asset/datatables-scroller": "~1.0",
+        "bower-asset/datatables-scroller": "~1.0"
     },
     "autoload": {
         "psr-4": {
