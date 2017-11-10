@@ -1,25 +1,35 @@
 {
     "name": "helmut-kleinhans/yii2-dbtools",
-    "description": "Database Backup and Restore functionality",
+    "description": "Yii2 Database Backup and Restore functionality",
     "type": "yii2-extension",
-    "keywords": ["yii2","Database", "Backup","Restore"],
+    "homepage": "https://github.com/helmut-kleinhans/yii2-dbtools",
+    "keywords": ["yii2","database", "backup", "restore", "dbtools"],
     "license": "Apache-2.0",
     "authors": [
         {
             "name": "Helmut Kleinhans",
             "email": "q.q@gmail.com"
+        },
+        {
+            "name": "Roman Dreissker",
+            "email": "q.q@gmail.com"
         }
     ],
     "require": {
         "yiisoft/yii2": "*",
-        "bower-asset/datatables": "~1.10",
-        "bower-asset/datatables-plugins": "~1.0",
-        "bower-asset/datatables-selects": "~1.0",
-        "bower-asset/datatables-scroller": "~1.0"
+        "bower-asset/datatables.net": "*",
+        "bower-asset/datatables.net-plugins": "*",
+        "bower-asset/datatables.net-selects": "*",
+        "bower-asset/datatables.net-scroller": "*"
     },
     "autoload": {
         "psr-4": {
-            "kleinhans\\modules\\dbtools\\": "/src"
+            "kleinhans\\modules\\dbtools\\": "src/"
+        }
+    },
+    "extra": {
+        "asset-installer-paths": {
+            "bower-asset-library": "vendor/bower"
         }
     }
 }
