@@ -34,7 +34,7 @@ Advanced ```[backend|frontend|common]/config/main.php```
 >
         'modules'    => [
             'dbtools' => [
-                'class' => 'helmut-kleinhans\modules\dbtools\Module',
+                'class' => 'kleinhans\modules\dbtools\Module',
             ],
             ...
             ...

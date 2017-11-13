@@ -6,7 +6,7 @@ use yii\web\AssetBundle;
 
 class DbManageAsset extends AssetBundle
 {
-    public $sourcePath = '@vendor/helmut-kleinhans\yii2-dbtools/src/assets';
+    public $sourcePath = '@vendor/helmut-kleinhans/yii2-dbtools/src/assets';
 
     public $css = ['css/manage.css'];
 

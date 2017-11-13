@@ -22,7 +22,6 @@ class ManageController extends Controller {
 
     private $dbconname;
 
-
     public function __construct($id, $module, $config = [])
     {
         $this->dbconname = HelperGlobal::paramOptional($_REQUEST, 'dbconname','');
@@ -67,13 +66,94 @@ class ManageController extends Controller {
         return $view;*/
     }
 
-
     public function actionAutogen()
     {
         $c = new DbGenValues();
         $c->create();
         $c = new DbGenClasses();
         $c->create();
+    }
+
+    public function actionSql2file()
+    {
+        $dbconname = $this->dbconname;
+        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
+        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
+        if (empty($dbconname) || empty($group) || empty($name))
+        {
+            throw new \Exception('Empty param', 500);
+        }
+        $db = Yii::$app->$dbconname;
+        if (empty($db))
+        {
+            throw new \Exception('db failed: ' . $dbconname, 500);
+        }
+        $c = NULL;
+        switch ($group)
+        {
+            case DbSchemaProcedures::cType:
+                $c = new DbSchemaProcedures($dbconname, $db);
+                break;
+            case DbSchemaTriggers::cType:
+                $c = new DbSchemaTriggers($dbconname, $db);
+                break;
+            case DbSchemaTables::cType:
+                $c = new DbSchemaTables($dbconname, $db);
+                break;
+            case DbSchemaEvents::cType:
+                $c = new DbSchemaEvents($dbconname, $db);
+                break;
+            case DbSchemaViews::cType:
+                $c = new DbSchemaViews($dbconname, $db);
+                break;
+            case DbSchemaFunctions::cType:
+                $c = new DbSchemaFunctions($dbconname, $db);
+                break;
+            default:
+                throw new \Exception('Unknown group: ' . $group, 500);
+        }
+        $c->sql2file($name);
+    }
+
+    public function actionFile2sql()
+    {
+        $dbconname = $this->dbconname;
+        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
+        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
+        if (empty($dbconname) || empty($group) || empty($name))
+        {
+            throw new \Exception('Empty param', 500);
+        }
+        $db = Yii::$app->$dbconname;
+        if (empty($db))
+        {
+            throw new \Exception('db failed: ' . $dbconname, 500);
+        }
+        $c = NULL;
+        switch ($group)
+        {
+            case DbSchemaProcedures::cType:
+                $c = new DbSchemaProcedures($dbconname, $db);
+                break;
+            case DbSchemaTriggers::cType:
+                $c = new DbSchemaTriggers($dbconname, $db);
+                break;
+            case DbSchemaTables::cType:
+                $c = new DbSchemaTables($dbconname, $db);
+                break;
+            case DbSchemaEvents::cType:
+                $c = new DbSchemaEvents($dbconname, $db);
+                break;
+            case DbSchemaViews::cType:
+                $c = new DbSchemaViews($dbconname, $db);
+                break;
+            case DbSchemaFunctions::cType:
+                $c = new DbSchemaFunctions($dbconname, $db);
+                break;
+            default:
+                throw new \Exception('Unknown group: ' . $group, 500);
+        }
+        $c->file2sql($name);
     }
 
     private function _getInfo($dbconname, $db)

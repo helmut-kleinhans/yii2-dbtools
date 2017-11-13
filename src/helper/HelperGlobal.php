@@ -17,6 +17,18 @@ class HelperGlobal
 		return $dbs;
 	}
 
+    public static function paramNeeded($array, $param)
+    {
+        if (empty($array) || !isset($array[$param]))
+        {
+            BaseController::setError('Needed param is missing: ' . $param);
+
+            return '';
+        }
+
+        return $array[$param];
+    }
+
     public static function paramOptional($array, $param, $def)
     {
         if (empty($array) || !isset($array[$param]))

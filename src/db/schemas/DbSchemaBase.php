@@ -2,6 +2,7 @@
 namespace kleinhans\modules\dbtools\db\schemas;
 
 use dbtools\dbvalues\DbValues;
+use kleinhans\modules\dbtools\db\values\DbCheckValues;
 use kleinhans\modules\dbtools\Module;
 use Yii;
 use yii\helpers\FileHelper;
@@ -722,7 +723,7 @@ class DbSchemaBase
 			}
 			elseif (substr($dec, 0, 7) == 'eError_')
 			{
-				$p = DbValueCheck::checkError(self::splitDeclare($dec));
+				$p = DbCheckValues::checkError(self::splitDeclare($dec));
 				$ret['error'][] = $p;
 				if(isset($p['warning']) && !empty($p['warning'])) {
 					$bErrorWarning=true;
@@ -731,7 +732,7 @@ class DbSchemaBase
 			}
 			elseif (substr($dec, 0, 7) == 'cConst_')
 			{
-				$p = DbValueCheck::checkConst(self::splitDeclare($dec));
+				$p = DbCheckValues::checkConst(self::splitDeclare($dec));
 				$ret['const'][] = $p;
 				if(isset($p['warning']) && !empty($p['warning'])) {
 					$bErrorWarning=true;

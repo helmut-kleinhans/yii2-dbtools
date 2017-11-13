@@ -1,8 +1,6 @@
 <?php
 namespace kleinhans\modules\dbtools\db\values;
-
-use autogen\dbvalues\AutoGenDbValues;
-use autogen\dbvalues\GenDbValues;
+use dbtools\dbvalues\DbValues;
 use Yii;
 
 class DbCheckValues extends DbValues {
@@ -45,9 +43,9 @@ class DbCheckValues extends DbValues {
 		$p['message'] = '';
 		$wmsg=[];
 
-		if ($type != GenDbValues::cErrorDbType)
+		if ($type != DbGenValues::cErrorDbType)
 		{
-			$wmsg[] = 'type needs to be '.GenDbValues::cErrorDbType.'!';
+			$wmsg[] = 'type needs to be '.DbGenValues::cErrorDbType.'!';
 		}
 
 		if (version_compare(PHP_VERSION, '7.0.0') < 0)
@@ -71,9 +69,9 @@ class DbCheckValues extends DbValues {
 			}
 		}
 
-		if ($v >= GenDbValues::iMaxErrorValue)
+		if ($v >= DbGenValues::iMaxErrorValue)
 		{
-			$wmsg[] = 'errorcode(' . $v . ') is exceeds limit of ' . GenDbValues::iMaxErrorValue . '"!';
+			$wmsg[] = 'errorcode(' . $v . ') is exceeds limit of ' . DbGenValues::iMaxErrorValue . '"!';
 		}
 
 		$p['warning'] = trim(implode('<br/>', $wmsg));
