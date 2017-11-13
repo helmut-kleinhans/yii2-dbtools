@@ -16,7 +16,7 @@ $this->registerCssFile(Yii::getAlias('@web') . "/css/general.css", ["position" =
 
 */
 
-$dbmanageasset = \kleinhans\modules\dbtools\DbManageAsset::register($this);
+$dbmanageasset = \DbTools\DbManageAsset::register($this);
 
 
 $this->registerJsFile('https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
@@ -113,7 +113,7 @@ foreach ($data['data'] as $group => $items) {
                 <?php
                 foreach ($statusmap as $status=>$style)
                 {
-                    echo \kleinhans\modules\dbtools\helper\HelperView::getFancyCheckbox('cb_filter_'.$status,$status,$style,false,'updateItemTable()');
+                    echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_'.$status,$status,$style,false,'updateItemTable()');
                 }
                 ?>
 

@@ -1,11 +1,11 @@
 <?php
 
-namespace kleinhans\modules\dbtools;
+namespace DbTools;
 
 use Yii;
 
 class DbToolsModule extends \yii\base\Module {
-	public $controllerNamespace = 'kleinhans\modules\dbtools\controllers';
+	public $controllerNamespace = 'DbTools\controllers';
 
     public $checkDefiner = 'root@%';
     public $exportDelimiter = "\$del$\n\n";

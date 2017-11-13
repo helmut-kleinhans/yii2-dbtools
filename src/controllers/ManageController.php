@@ -1,17 +1,17 @@
 <?php
 
-namespace kleinhans\modules\dbtools\controllers;
+namespace DbTools\controllers;
 
-use kleinhans\modules\dbtools\db\classes\DbGenClasses;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaBase;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaEvents;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaFunctions;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaProcedures;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaTables;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaTriggers;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaViews;
-use kleinhans\modules\dbtools\db\values\DbGenValues;
-use kleinhans\modules\dbtools\helper\HelperGlobal;
+use DbTools\db\classes\DbGenClasses;
+use DbTools\db\schemas\DbSchemaBase;
+use DbTools\db\schemas\DbSchemaEvents;
+use DbTools\db\schemas\DbSchemaFunctions;
+use DbTools\db\schemas\DbSchemaProcedures;
+use DbTools\db\schemas\DbSchemaTables;
+use DbTools\db\schemas\DbSchemaTriggers;
+use DbTools\db\schemas\DbSchemaViews;
+use DbTools\db\values\DbGenValues;
+use DbTools\helper\HelperGlobal;
 use yii\web\Controller;
 use Yii;
 use yii\data\ArrayDataProvider;

@@ -1,6 +1,8 @@
 <?php
-namespace kleinhans\modules\dbtools\db\values;
+namespace DbTools\db\values;
+
 use dbtools\dbvalues\DbValues;
+
 use Yii;
 
 class DbCheckValues extends DbValues {

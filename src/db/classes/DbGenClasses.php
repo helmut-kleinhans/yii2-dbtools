@@ -1,11 +1,11 @@
 <?php
-namespace kleinhans\modules\dbtools\db\classes;
+namespace DbTools\db\classes;
 
-use kleinhans\modules\dbtools\db\schemas\DbSchemaBase;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaFunctions;
-use kleinhans\modules\dbtools\db\schemas\DbSchemaProcedures;
-use kleinhans\modules\dbtools\helper\HelperGlobal;
-use kleinhans\modules\dbtools\DbToolsModule;
+use DbTools\db\schemas\DbSchemaBase;
+use DbTools\db\schemas\DbSchemaFunctions;
+use DbTools\db\schemas\DbSchemaProcedures;
+use DbTools\helper\HelperGlobal;
+use DbTools\DbToolsModule;
 use Yii;
 use yii\helpers\FileHelper;
 

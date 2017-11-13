@@ -1,7 +1,7 @@
 <?php
-namespace kleinhans\modules\dbtools\db\schemas;
+namespace DbTools\db\schemas;
 
-use kleinhans\modules\dbtools\DbToolsModule;
+use DbTools\DbToolsModule;
 use Yii;
 
 class DbSchemaFunctions extends DbSchemaProcedures

@@ -1,9 +1,9 @@
 <?php
-namespace kleinhans\modules\dbtools\db\schemas;
+namespace DbTools\db\schemas;
 
 use dbtools\dbvalues\DbValues;
-use kleinhans\modules\dbtools\db\values\DbCheckValues;
-use kleinhans\modules\dbtools\DbToolsModule;
+use DbTools\db\values\DbCheckValues;
+use DbTools\DbToolsModule;
 use Yii;
 use yii\helpers\FileHelper;
 

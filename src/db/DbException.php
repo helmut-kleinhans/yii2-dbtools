@@ -1,5 +1,5 @@
 <?
-namespace kleinhans\modules\dbtools\db;
+namespace DbTools\db;
 
 use dbtools\dbvalues\DbValues;
 use Yii;

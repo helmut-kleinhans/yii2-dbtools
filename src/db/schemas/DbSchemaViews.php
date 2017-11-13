@@ -1,5 +1,5 @@
 <?php
-namespace kleinhans\modules\dbtools\db\schemas;
+namespace DbTools\db\schemas;
 
 use Yii;
 

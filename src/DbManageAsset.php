@@ -1,6 +1,6 @@
 <?php
 
-namespace kleinhans\modules\dbtools;
+namespace DbTools;
 
 use yii\web\AssetBundle;
 

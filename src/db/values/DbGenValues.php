@@ -1,8 +1,8 @@
 <?php
-namespace kleinhans\modules\dbtools\db\values;
+namespace DbTools\db\values;
 
-use kleinhans\modules\dbtools\db\schemas\DbSchemaColumns;
-use kleinhans\modules\dbtools\DbToolsModule;
+use DbTools\db\schemas\DbSchemaColumns;
+use DbTools\DbToolsModule;
 use Yii;
 
 class DbGenValues

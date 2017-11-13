@@ -1,5 +1,5 @@
 <?php
-namespace kleinhans\modules\dbtools\helper;
+namespace DbTools\helper;
 
 use Yii;
 
