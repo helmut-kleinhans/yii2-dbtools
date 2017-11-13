@@ -21,7 +21,7 @@
     },
     "autoload": {
         "psr-4": {
-            "kleinhans\\modules\\dbtools\\": "src/"
+            "DbTools\\": "src/"
         }
     },
     "extra": {
