@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dbvalues version='1.0'>
+    <cat name="TypeTraits">
+        <const name="int32Max" type="INT" value="2147483647"/>
+        <const name="int32Min" type="INT" value="-2147483648"/>
+    </cat>
+</dbvalues>

@@ -30,7 +30,7 @@ class DbSchemaTables extends DbSchemaBase
 
     public function getCreate($name)
     {
-        $row = $this->db->createCommand('SHOW CREATE TABLE ' . $name)->queryOne();
+        $row = $this->db->createCommand('SHOW CREATE TABLE ' . $this->db->quoteTableName($name))->queryOne();
         if (isset($row['Create Table'])) {
             $sql = $row['Create Table'];
         }
