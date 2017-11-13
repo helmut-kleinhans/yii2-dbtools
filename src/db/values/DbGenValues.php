@@ -2,7 +2,7 @@
 namespace kleinhans\modules\dbtools\db\values;
 
 use kleinhans\modules\dbtools\db\schemas\DbSchemaColumns;
-use kleinhans\modules\dbtools\Module;
+use kleinhans\modules\dbtools\DbToolsModule;
 use Yii;
 
 class DbGenValues
@@ -14,7 +14,7 @@ class DbGenValues
 
     public function __construct()
     {
-        $this->dir = Module::getInstance()->exportPath . '/dbvalues';
+        $this->dir = DbToolsModule::getInstance()->exportPath . '/dbvalues';
         if(!file_exists($this->dir)) {
             @mkdir($this->dir, 0777,true);
         }
@@ -24,7 +24,7 @@ class DbGenValues
     {
         $final = [];
         try {
-            $xml = simplexml_load_file(Module::getInstance()->xmlValues);
+            $xml = simplexml_load_file(DbToolsModule::getInstance()->xmlValues);
             // Find the customer
             $params = [
                 'nextvalue' => 0,

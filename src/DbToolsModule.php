@@ -4,7 +4,7 @@ namespace kleinhans\modules\dbtools;
 
 use Yii;
 
-class Module extends \yii\base\Module {
+class DbToolsModule extends \yii\base\Module {
 	public $controllerNamespace = 'kleinhans\modules\dbtools\controllers';
 
     public $checkDefiner = 'root@%';

@@ -3,7 +3,7 @@ namespace kleinhans\modules\dbtools\db\schemas;
 
 use dbtools\dbvalues\DbValues;
 use kleinhans\modules\dbtools\db\values\DbCheckValues;
-use kleinhans\modules\dbtools\Module;
+use kleinhans\modules\dbtools\DbToolsModule;
 use Yii;
 use yii\helpers\FileHelper;
 
@@ -22,7 +22,7 @@ class DbSchemaBase
 	{
 		$this->dbconname = $dbconname;
 		$this->db = $db;
-        $this->dir = Module::getInstance()->exportPath . '/export/' . $dbconname . '/' . $subdir;
+        $this->dir = DbToolsModule::getInstance()->exportPath . '/export/' . $dbconname . '/' . $subdir;
     }
 
     protected function getDbName()
@@ -1035,7 +1035,7 @@ class DbSchemaBase
             return;
         }
         $data = str_replace("\r", '', $data);
-        $sqls = array_filter(explode(Module::getInstance()->exportDelimiter, $data), 'strlen');
+        $sqls = array_filter(explode(DbToolsModule::getInstance()->exportDelimiter, $data), 'strlen');
 
         $transaction = $this->db->beginTransaction();
         try {

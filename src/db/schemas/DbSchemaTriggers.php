@@ -1,7 +1,7 @@
 <?php
 namespace kleinhans\modules\dbtools\db\schemas;
 
-use kleinhans\modules\dbtools\Module;
+use kleinhans\modules\dbtools\DbToolsModule;
 use Yii;
 
 class DbSchemaTriggers extends DbSchemaBase
@@ -46,7 +46,7 @@ class DbSchemaTriggers extends DbSchemaBase
         $full[] = $sql;
         $full[] = 'DELIMITER ;';
 
-        $sql = implode(Module::getInstance()->exportDelimiter,$full);
+        $sql = implode(DbToolsModule::getInstance()->exportDelimiter,$full);
 
 		return $sql;
 	}
@@ -99,8 +99,8 @@ class DbSchemaTriggers extends DbSchemaBase
 			unset($declares['warnings']);
 		}
 
-        if($data['helper']['DEFINER'] != Module::getInstance()->checkDefiner) {
-            $warnings[] = 'DEFINER needs to be "'.Module::getInstance()->checkDefiner.'"';
+        if($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
+            $warnings[] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
         }
 
         $info = '<h4>Trigger</h4><table class="table table-sm">

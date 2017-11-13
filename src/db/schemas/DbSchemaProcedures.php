@@ -1,7 +1,7 @@
 <?php
 namespace kleinhans\modules\dbtools\db\schemas;
 
-use kleinhans\modules\dbtools\Module;
+use kleinhans\modules\dbtools\DbToolsModule;
 use Yii;
 
 class DbSchemaProcedures extends DbSchemaBase
@@ -48,7 +48,7 @@ class DbSchemaProcedures extends DbSchemaBase
         $full[] = $sql;
         $full[] = 'DELIMITER ;';
 
-		$sql = implode(Module::getInstance()->exportDelimiter,$full);
+		$sql = implode(DbToolsModule::getInstance()->exportDelimiter,$full);
 
 		return $sql;
 	}
@@ -122,8 +122,8 @@ class DbSchemaProcedures extends DbSchemaBase
     public static function parseHead($body,$data)
     {
         $ret = [];
-        if($data['DEFINER'] != Module::getInstance()->checkDefiner) {
-            $ret['warnings'][] = 'DEFINER needs to be "'.Module::getInstance()->checkDefiner.'"';
+        if($data['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
+            $ret['warnings'][] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
         }
 
         if($data['SECURITY_TYPE'] != 'INVOKER') {

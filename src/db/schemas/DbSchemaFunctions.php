@@ -1,7 +1,7 @@
 <?php
 namespace kleinhans\modules\dbtools\db\schemas;
 
-use kleinhans\modules\dbtools\Module;
+use kleinhans\modules\dbtools\DbToolsModule;
 use Yii;
 
 class DbSchemaFunctions extends DbSchemaProcedures
@@ -47,7 +47,7 @@ class DbSchemaFunctions extends DbSchemaProcedures
         $full[] = $sql;
         $full[] = 'DELIMITER ;';
 
-        $sql = implode(Module::getInstance()->exportDelimiter,$full);
+        $sql = implode(DbToolsModule::getInstance()->exportDelimiter,$full);
 
 		return $sql;
 	}

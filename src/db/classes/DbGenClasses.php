@@ -5,7 +5,7 @@ use kleinhans\modules\dbtools\db\schemas\DbSchemaBase;
 use kleinhans\modules\dbtools\db\schemas\DbSchemaFunctions;
 use kleinhans\modules\dbtools\db\schemas\DbSchemaProcedures;
 use kleinhans\modules\dbtools\helper\HelperGlobal;
-use kleinhans\modules\dbtools\Module;
+use kleinhans\modules\dbtools\DbToolsModule;
 use Yii;
 use yii\helpers\FileHelper;
 
@@ -15,7 +15,7 @@ class DbGenClasses
 
     public function __construct()
     {
-        $this->dir = Module::getInstance()->exportPath . '/dbclasses';
+        $this->dir = DbToolsModule::getInstance()->exportPath . '/dbclasses';
         if(!file_exists($this->dir)) {
             @mkdir($this->dir, 0777,true);
         }
