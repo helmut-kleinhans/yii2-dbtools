@@ -155,10 +155,10 @@ class DbGenClasses
 
         $out[] = '<?php
         
-namespace dbtools\\dbclasses\\' . $dbconname . ';
+namespace DbToolsExport\\dbclasses\\' . $dbconname . ';
 
 use Yii;
-use kleinhans\\modules\\dbtools\\db\classes\\' . $extends . ';
+use DbTools\\db\classes\\' . $extends . ';
 
 class ' . $classname . ' extends ' . $extends . '
 {';

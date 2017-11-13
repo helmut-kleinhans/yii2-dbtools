@@ -1,7 +1,7 @@
 <?php
 namespace DbTools\db\values;
 
-use dbtools\dbvalues\DbValues;
+use DbToolsExport\dbvalues\DbValues;
 
 use Yii;
 

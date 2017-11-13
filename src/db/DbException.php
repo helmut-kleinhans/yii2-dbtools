@@ -1,7 +1,7 @@
-<?
+<?php
 namespace DbTools\db;
 
-use dbtools\dbvalues\DbValues;
+use DbToolsExport\dbvalues\DbValues;
 use Yii;
 
 class DbException extends \yii\db\Exception
@@ -15,19 +15,23 @@ class DbException extends \yii\db\Exception
 		$errorinfo = empty($e) ? [] : $e->errorInfo;
         $this->dbMsg = isset($errorinfo[2]) ? $errorinfo[2] : $msg;
 
-        $code = empty($e)
-			? $code
-			: isset($errorinfo[1])
-				? $errorinfo[1]
-				: $e->getCode();
+        if (!empty($e)) {
+            if (isset($errorinfo[1])) {
+                $code = $errorinfo[1];
+            }
+            else {
+                $code = $e->getCode();
+            }
 
-		$msg = empty($e)
-			? $msg
-			: isset($errorinfo[2])
-				? empty($errorinfo[2])
-					? DbValues::MessageByCode($code)
-					: DbValues::MessageByCode($code).' - '.$errorinfo[2]
-				: $e->getMessage();
+            if(!isset($errorinfo[2])) {
+                $msg = $e->getMessage();
+            } else {
+                $msg = DbValues::MessageByCode($code);
+                if(!empty($errorinfo[2])) {
+                    $msg .= ' - '.$errorinfo[2];
+                }
+            }
+        }
 
 		parent::__construct($msg,$errorinfo, $code, $e);
 	}

@@ -1,7 +1,7 @@
 <?php
 namespace DbTools\db\schemas;
 
-use dbtools\dbvalues\DbValues;
+use DbToolsExport\dbvalues\DbValues;
 use DbTools\db\values\DbCheckValues;
 use DbTools\DbToolsModule;
 use Yii;

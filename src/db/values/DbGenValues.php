@@ -46,7 +46,7 @@ class DbGenValues
         ];
 
         $out = '<?php
-namespace dbtools\dbvalues;
+namespace DbToolsExport\dbvalues;
 
 class DbValues
 {

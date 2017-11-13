@@ -7,15 +7,18 @@ use Yii;
 class DbToolsModule extends \yii\base\Module {
 	public $controllerNamespace = 'DbTools\controllers';
 
+	//configurable
     public $checkDefiner = 'root@%';
     public $exportDelimiter = "\$del$\n\n";
-    public $exportPath = "@app/dbtools";
-    public $xmlValues = "@app/input.xml";
+    public $xmlValues = "@app/values.xml";
 
-	public function init() {
+    //set with alias
+    public $exportPath = '';
+
+    public function init() {
 		parent::init ();
 
-        $this->exportPath=\Yii::getAlias($this->exportPath);
+        $this->exportPath=\Yii::getAlias('@DbToolsExport');
         $this->xmlValues=\Yii::getAlias($this->xmlValues);
 
         if(!file_exists($this->exportPath)) {
@@ -24,7 +27,8 @@ class DbToolsModule extends \yii\base\Module {
         if(!file_exists($this->xmlValues)) {
             throw new \Exception('xmlValues ('.$this->xmlValues.') does not exist');
         }
-        Yii::setAlias('@dbtools', $this->exportPath);
+        $this->exportDelimiter = '$'.$this->exportDelimiter."\n\n";
+
 	}
 	public function getFileList() {
 		return $this->fileList;
