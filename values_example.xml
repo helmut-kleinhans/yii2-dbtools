@@ -1,7 +1,17 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <dbvalues version='1.0'>
-    <cat name="TypeTraits">
-        <const name="int32Max" type="INT" value="2147483647"/>
-        <const name="int32Min" type="INT" value="-2147483648"/>
+  <cat name="CatName1">
+    <cat name="CatName2">
+      <enum value="100">
+        <error name="error1">Error Message1</error>
+        <error name="error2">Error Message2</error>
+      </enum>
     </cat>
+  </cat>
+  <cat name="CatName3">
+    <const name="const1" type="INT" value="1"/>
+    <const name="const2" type="UNSIGNED INT" value="2"/>
+    <sql name="dbvalues" db="db" table="tablename" colname="col4name" colvalue="col4value"/>
+    <sqlenum name="dbenums" db="db" table="tablename" colenum="col4enum"/>
+  </cat>
 </dbvalues>

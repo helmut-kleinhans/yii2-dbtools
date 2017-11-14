@@ -736,7 +736,7 @@ class DbSchemaBase
 				$ret['const'][] = $p;
 				if(isset($p['warning']) && !empty($p['warning'])) {
 					$bErrorWarning=true;
-					$ret['warnings'][] = 'Declare Const Warning: "'.$p['warning'].'"';
+					$ret['warnings'][] = 'DECLARE Const Warning: "'.$p['warning'].'"';
 				}
 				$decl['const'][]=$p['name'];
 			}
@@ -748,7 +748,7 @@ class DbSchemaBase
                 } else {
                     $p = self::splitDeclare($dec);
                     $ret['unknown'][] = $p;
-                    $ret['warnings'][] = 'Unknown Declare Type!: "'.$dec.'"';
+                    $ret['warnings'][] = 'Unknown DECLARE !: "'.$dec.'"';
                     $bErrorWarning=true;
                 }
 			}
