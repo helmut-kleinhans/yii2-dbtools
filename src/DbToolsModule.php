@@ -9,7 +9,7 @@ class DbToolsModule extends \yii\base\Module {
 
 	//configurable
     public $checkDefiner = 'root@%';
-    public $exportDelimiter = "\$del$\n\n";
+    public $exportDelimiter = "";
     public $xmlValues = "@app/values.xml";
 
     //set with alias
@@ -27,8 +27,9 @@ class DbToolsModule extends \yii\base\Module {
         if(!file_exists($this->xmlValues)) {
             throw new \Exception('xmlValues ('.$this->xmlValues.') does not exist');
         }
-        $this->exportDelimiter = '$'.$this->exportDelimiter."\n\n";
-
+        if(empty($this->exportDelimiter)) {
+            $this->exportDelimiter = '$$';
+        }
 	}
 	public function getFileList() {
 		return $this->fileList;

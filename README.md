@@ -34,7 +34,7 @@ Advanced ```[backend|frontend|common]/config/main.php```
                 'class' => 'DbTools\DbToolsModule',
                 //'checkDefiner' => 'root@%',       //used for manage tool to show warning if definer of procedure, 
                                                     //function or trigger definer doesnt match
-                //'exportDelimiter' => 'xyz',       //delimiter which will be used for export of Procedures,Functions 
+                //'exportDelimiter' => '$$',        //delimiter which will be used for export of Procedures,Functions 
                                                     //and Triggers
                 //'xmlValues' => '@app/values.xml', //input file for constants and error values
             ],
