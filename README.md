@@ -23,7 +23,7 @@ to the require section of your `composer.json` file.
 
 ## Usage
 
-Once the extension is installed, simply add it in your config by:
+Once the extension is installed, simply add it in your config by  :
 
 Basic ```config/web.php```
 

@@ -30,6 +30,7 @@ class DbToolsModule extends \yii\base\Module {
         if(empty($this->exportDelimiter)) {
             $this->exportDelimiter = '$$';
         }
+        $this->exportDelimiter.="\n\n";
 	}
 	public function getFileList() {
 		return $this->fileList;
