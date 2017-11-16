@@ -29,7 +29,7 @@ class DbSchemaTriggers extends DbSchemaBase
 
 	public function getCreate($name)
 	{
-		$row = $this->db->createCommand('SHOW CREATE TRIGGER ' . $this->db->quoteValue($name))->queryOne();
+		$row = $this->db->createCommand('SHOW CREATE TRIGGER ' . $this->db->quoteTableName($name))->queryOne();
 		if (isset($row['SQL Original Statement']))
 		{
 			$sql = $row['SQL Original Statement'];

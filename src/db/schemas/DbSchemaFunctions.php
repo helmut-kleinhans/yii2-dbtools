@@ -30,7 +30,7 @@ class DbSchemaFunctions extends DbSchemaProcedures
 
 	public function getCreate($name)
 	{
-		$row = $this->db->createCommand('SHOW CREATE FUNCTION ' . $this->db->quoteValue($name))->queryOne();
+		$row = $this->db->createCommand('SHOW CREATE FUNCTION ' . $this->db->quoteTableName($name))->queryOne();
 		if (isset($row['Create Function']))
 		{
 			$sql = $row['Create Function'];

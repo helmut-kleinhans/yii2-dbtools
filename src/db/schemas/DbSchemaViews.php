@@ -28,7 +28,7 @@ class DbSchemaViews extends DbSchemaTables
 
 	public function getCreate($name)
 	{
-		$row = $this->db->createCommand('SHOW CREATE VIEW ' . $this->db->quoteValue($name))->queryOne();
+		$row = $this->db->createCommand('SHOW CREATE VIEW ' . $this->db->quoteTableName($name))->queryOne();
 		if (isset($row['Create View']))
 		{
 			$sql = $row['Create View'];

@@ -29,7 +29,7 @@ class DbSchemaEvents extends DbSchemaBase
 
 	public function getCreate($name)
 	{
-		$row = $this->db->createCommand('SHOW CREATE EVENT ' . $this->db->quoteValue($name))->queryOne();
+		$row = $this->db->createCommand('SHOW CREATE EVENT ' . $this->db->quoteTableName($name))->queryOne();
 		var_dump($row);
 		die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
 		if (isset($row['Create Event']))
