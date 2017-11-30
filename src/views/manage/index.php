@@ -97,12 +97,12 @@ foreach ($data['data'] as $group => $items) {
 </div>
 
 <div class="row">
-    <div class="col-md-3" id="leftf">
+    <div class="col-md-3">
         <div class="row">
             <ul class="nav nav-tabs">
                 <?php
                     foreach ($dbs as $dbconname => $db) {
-                        echo '<li'.(($dbconname==$active)?' class="active"':'').'><a href="'.Yii::$app->getUrlManager()->createUrl(['db','dbconname'=>$dbconname]).'">'.$dbconname.'</a></li>';
+                        echo '<li'.(($dbconname==$active)?' class="active"':'').'><a href="'.Yii::$app->getUrlManager()->createUrl(['dbtools/manage','dbconname'=>$dbconname]).'">'.$dbconname.'</a></li>';
                     }
                 ?>
             </ul>
@@ -123,7 +123,7 @@ foreach ($data['data'] as $group => $items) {
             </div>
         </fieldset>
     </div>
-    <div class="col-md-9" id="rightf">
+    <div class="col-md-9">
         <ul class="nav nav-tabs" id="contentTab">
             <li class="nav active"><a href="#A" data-toggle="tab">Info</a></li>
             <li class="nav"><a href="#B" data-toggle="tab">Diff</a></li>

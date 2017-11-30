@@ -1,19 +1,3 @@
-#leftf {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 25%;
-    height: 100%;
-    overflow: auto;
-    z-index: 1000;
-    background-color: #eee;
-}
-
-#rightf {
-    width: 75%;
-    position: absolute;
-    right: 0;
-}
 
 html, body {
     background-color: white;
@@ -29,36 +13,6 @@ html {
     overflow: scroll;
     overflow-x: hidden;
 }
-/*
-fieldset {
-  border: none;
-  margin-bottom: 5px;
-  border-radius: 3px;
-  box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.4);
-}
-
-button {
-  background-color: #217333;
-  padding: 5px;
-  border: none;
-  border-radius: 3px;
-  color: white;
-  font-weight: bold;
-  margin: 3px;
-}
-
-optgroup {
-  background-color: rgb(104, 118, 135);
-  color: white;
-  font-weight: bold;
-  font-family: mono;
-  margin-top: 6px;
-  font-size: 0.8em;
-  margin-bottom: 2px;
-  padding: 3px 2px 0px 2px;
-}
-*/
-
 
 /****************************************************************
 * Toolbar
@@ -66,8 +20,8 @@ optgroup {
 
 .tools {
     position: fixed;
-    right: 10px;
-    top: 5px;
+    right: 50px;
+    top: 70px;
     z-index: 100000;
 }
 
@@ -91,8 +45,6 @@ optgroup {
     background-color: #efefef;
 }
 
-
-
 /****************************************************************
 * Data Table
 ****************************************************************/
@@ -106,9 +58,6 @@ tr.group,
 tr.group:hover {
     background-color: #ddd !important;
 }
-
-
-
 
 /****************************************************************
 * Fancy Checkbox
@@ -143,58 +92,6 @@ tr.group:hover {
 {
     /* Move the check mark back when checked */
     text-indent: 0;
-}
-
-
-/****************************************************************
-* Tri State Switch
-****************************************************************/
-
-.switch-line-wrapper {
-    all: initial;
-    position: relative;
-    display: inline-block;
-    width: 120px;
-    height: auto
-}
-.switch-line-bg {
-    height: 10px;
-    background-color: #f5f5f5;
-    border: 2px solid #E8E8E8;
-    border-radius: 5px;
-}
-
-.switch-line-off,
-.switch-line-nc,
-.switch-line-on
-{
-    position: absolute;
-    height: 6px;
-    width: 40px;
-}
-.switch-line-off {
-    background-color: #d9534f;
-    left: 2px;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
-}
-.switch-line-nc {
-    background-color: #a9a9a9;
-    left: 40px;
-}
-.switch-line-on {
-    background-color: #5cb85c;
-    right: 2px;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
-}
-
-/****************************************************************
-* Dropzone
-****************************************************************/
-
-.dropzonearea {
-    background-color: gray;
 }
 
 /****************************************************************
