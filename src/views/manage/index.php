@@ -39,8 +39,8 @@ $this->registerCssFile('http://www.mergely.com/Mergely/lib/mergely.css', ["posit
 
 $statusmap = [
     'ok' =>'success',
-    'missing' =>'primary',
-    'new' =>'danger',
+    'new' =>'primary',
+    'missing' =>'danger',
     'different' =>'warning',
 ];
 
