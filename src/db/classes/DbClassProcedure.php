@@ -1,8 +1,8 @@
 <?php
 namespace DbTools\db\classes;
 
+use DbTools\db\DbException;
 use Yii;
-use common\db\DbException;
 
 class DbClassProcedure extends DbClassBase
 {
@@ -106,4 +106,8 @@ class DbClassProcedure extends DbClassBase
 			throw new DbException($e);
 		}
 	}
+
+    public function getSelects() {
+        return $this->selectresults;
+    }
 }

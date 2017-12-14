@@ -1,8 +1,8 @@
 <?php
 namespace DbTools\db\classes;
 
+use DbTools\db\DbException;
 use Yii;
-use common\db\DbException;
 
 class DbClassFunction extends DbClassBase
 {

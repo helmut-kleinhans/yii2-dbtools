@@ -39,8 +39,8 @@ $this->registerCssFile('http://www.mergely.com/Mergely/lib/mergely.css', ["posit
 
 $statusmap = [
     'ok' =>'success',
-    'missingonserver' =>'primary',
-    'missingonsvn' =>'danger',
+    'missing' =>'primary',
+    'new' =>'danger',
     'different' =>'warning',
 ];
 
@@ -63,11 +63,11 @@ foreach ($data['data'] as $group => $items) {
         }
         else {
             if (empty($info['createdb'])) {
-                $status = 'missingonserver';
+                $status = 'missing';
             }
             else {
                 if (empty($info['createfile'])) {
-                    $status = 'missingonsvn';
+                    $status = 'new';
                 }
                 else {
                     $status = 'different';
@@ -507,11 +507,11 @@ $this->registerJs(<<<JS
                 $('#file2sql').hide();
                 $('#sql2file').hide();
                 break;
-            case 'missingonserver':
+            case 'missing':
                 $('#file2sql').show();
                 $('#sql2file').hide();
                 break;
-            case 'missingonsvn':
+            case 'new':
                 $('#file2sql').hide();
                 $('#sql2file').show();
                 break;
