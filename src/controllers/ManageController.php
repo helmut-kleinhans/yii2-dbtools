@@ -11,6 +11,7 @@ use DbTools\db\schemas\DbSchemaTables;
 use DbTools\db\schemas\DbSchemaTriggers;
 use DbTools\db\schemas\DbSchemaViews;
 use DbTools\db\values\DbGenValues;
+use DbTools\DbToolsModule;
 use DbTools\helper\HelperGlobal;
 use yii\web\Controller;
 use Yii;
@@ -27,6 +28,11 @@ class ManageController extends Controller {
         $this->dbconname = HelperGlobal::paramOptional($_REQUEST, 'dbconname','');
         parent::__construct($id, $module, $config);
         $this->enableCsrfValidation = false;
+    }
+
+    public function behaviors()
+    {
+        return DbToolsModule::getInstance()->behaviorsManage;
     }
 
     public function actionIndex()

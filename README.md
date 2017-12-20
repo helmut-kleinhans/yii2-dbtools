@@ -37,6 +37,23 @@ Advanced ```[backend|frontend|common]/config/main.php```
                 //'exportDelimiter' => '$$',        //delimiter which will be used for export of Procedures,Functions 
                                                     //and Triggers
                 //'xmlValues' => '@app/values.xml', //input file for constants and error values
+                /*
+                //define behaviors for the manage controller
+                'behaviorsManage' =>
+                    [
+                    'access' => [
+                        'class' => \yii\filters\AccessControl::className(),
+                        'rules' => [
+                            [
+                                'allow' => true,
+                                'matchCallback' => function ($rule, $action) {
+                                    return \backend\models\User::checkRoutePermission($action->id,$action->controller->id,$action->controller->module->id);
+                                }
+                            ],
+                        ],
+                    ],
+                ],
+                */
             ],
             ...
         ],

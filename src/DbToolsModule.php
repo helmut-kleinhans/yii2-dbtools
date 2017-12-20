@@ -11,6 +11,7 @@ class DbToolsModule extends \yii\base\Module {
     public $checkDefiner = 'root@%';
     public $exportDelimiter = "";
     public $xmlValues = "@app/values.xml";
+    public $behaviorsManage = [];
 
     //set with alias
     public $exportPath = '';
