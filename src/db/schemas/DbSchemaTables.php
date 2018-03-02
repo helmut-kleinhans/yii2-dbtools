@@ -16,7 +16,7 @@ class DbSchemaTables extends DbSchemaBase
 
     public function getList()
     {
-        $query = (new \yii\db\Query())->select(['*'])->from('information_schema.tables')->where('TABLE_SCHEMA=DATABASE()')->andWhere(['TABLE_TYPE' => 'BASE TABLE'])/*->andWhere('ENGINE!="FEDERATED"')*/;
+        $query = (new \yii\db\Query())->select(['*'])->from('information_schema.tables')->where('TABLE_SCHEMA=DATABASE()')->andWhere(['TABLE_TYPE' => 'BASE TABLE'])->andWhere('ENGINE!="MEMORY"');
         $rows = $query->createCommand($this->db)->queryAll();
         $ret = [];
         foreach ($rows as $item) {

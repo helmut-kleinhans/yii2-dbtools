@@ -65,7 +65,13 @@ class DbValues
             }
             if (isset($types['const'])) {
                 foreach ($types['const'] as $key) {
+
+                    if(strtolower($key['type'])=='string') {
+                        $key['type'] = 'CHAR('.strlen($key['value']).')';
+                        $key['value'] = "'".$key['value']."'";
+                    }
                     $cout = "\tconst cConst_{$cat}_{$key['name']} = {$key['value']};";
+
                     if (!empty($key['msg'])) {
                         $cout = str_pad($cout, 80, ' ', STR_PAD_RIGHT) . "//{$key['msg']}";
                     }

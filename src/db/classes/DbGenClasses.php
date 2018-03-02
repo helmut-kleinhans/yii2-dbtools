@@ -42,7 +42,7 @@ class DbGenClasses
         foreach ($classes as $type => $c) {
             $c->doFormat = false;
             $c->doCreate = false;
-            $c->doOnlySvn = true;
+            $c->doOnlySvn = false;
             $ret['data'][$type] = $c->info();
         }
         $search4use = [];
@@ -62,7 +62,7 @@ class DbGenClasses
             }
 
             foreach ($adata as $aname => $data) {
-                if (!$data['parse']['export']) {
+                if (!isset($data['parse']) || !isset($data['parse']['export']) || empty($data['parse']['export'])) {
                     continue;
                 }
                 $this->createClass($dbconname, $aname, $type, $data);
