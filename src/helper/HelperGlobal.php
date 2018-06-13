@@ -11,7 +11,7 @@ class HelperGlobal
 		$dbs= [];
 		foreach ($comps as $name=>$comp)
 		{
-			if(empty($comp) || !isset($comp['class']) || $comp['class'] != 'yii\db\Connection') continue;
+			if(empty($comp) || !isset($comp['class']) || !Yii::$app->$name instanceof \yii\db\Connection) continue;
 			$dbs[$name]=Yii::$app->$name;
 		}
 		return $dbs;

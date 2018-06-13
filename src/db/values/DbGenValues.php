@@ -20,6 +20,17 @@ class DbGenValues
         }
     }
 
+    private static function camelCaseExplode($string, $lowercase = true) : string {
+        /*
+        /([A-Z][^A-Z]*)/ gives "My X M L Parsing Engine"
+        /([A-Z][^A-Z]+)/ gives "My XML Parsing Engine"
+        /([A-Z]+[^A-Z]*)/ gives "My XMLParsing Engine"
+        */
+        $array = preg_split('/([A-Z]+[^A-Z]*)/', $string, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        if ($lowercase) array_map('strtolower', $array);
+        return preg_replace('/\s\s+/', ' ',implode(' ',$array));
+    }
+
     public function create()
     {
         $final = [];
@@ -354,12 +365,18 @@ Error\t| $msg";
         if ($value >= self::iMaxErrorValue) {
             self::error($in, $params, 'value is too large');
         }
-        $out[$params['cat']]['error'][] = [
+        $pkt = [
             'value' => $value,
             'name'  => trim($in['name'] . ''),
             'msg'   => trim($in . ''),
             'type'  => self::cErrorDbType,
         ];
+
+        if(empty($pkt['msg'])) {
+            $pkt['msg'] = self::camelCaseExplode(str_replace("_"," ",$params['cat'])) . ': '.self::camelCaseExplode(str_replace("_"," ",$pkt['name']));
+        }
+
+        $out[$params['cat']]['error'][] = $pkt;
     }
 
     private static function parseConst(&$out, $in, $params)

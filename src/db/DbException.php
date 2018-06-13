@@ -2,7 +2,6 @@
 namespace DbTools\db;
 
 use DbToolsExport\dbvalues\DbValues;
-use Yii;
 
 class DbException extends \yii\db\Exception
 {
