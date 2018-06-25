@@ -209,4 +209,9 @@ class ManageController extends Controller {
         return $ret;
     }
 
+
+	public function actionDiff(){
+		$this->layout = 'diff';
+		return $this->render('diff',[]);
+	}
 }

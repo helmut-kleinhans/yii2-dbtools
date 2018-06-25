@@ -3,18 +3,6 @@ use yii\helpers\Html;
 use yii\bootstrap\ActiveForm;
 
 $this->title = 'Manage DBs';
-/*
-$this->registerJsFile(Yii::getAlias('@web') . "/js/jquery-2.2.4.min.js", ["position" => $this::POS_HEAD]);
-$this->registerJsFile(Yii::getAlias('@web') . "/js/codemirror.js", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/codemirror.css", ["position" => $this::POS_HEAD]);
-$this->registerJsFile(Yii::getAlias('@web') . "/js/mergely.js", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/mergely.css", ["position" => $this::POS_HEAD]);
-$this->registerJsFile(Yii::getAlias('@web') . "/js/bootstrap.js", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/bootstrap.css", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/font-awesome.min.css", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/general.css", ["position" => $this::POS_HEAD]);
-
-*/
 
 $dbmanageasset = \DbTools\DbManageAsset::register($this);
 
@@ -31,11 +19,6 @@ $this->registerCssFile('https://cdn.datatables.net/select/1.2.2/css/select.boots
 $this->registerJsFile('https://cdn.datatables.net/scroller/1.4.2/js/dataTables.scroller.min.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
 $this->registerCssFile('https://cdn.datatables.net/scroller/1.4.2/css/scroller.dataTables.min.css', ["position" => $this::POS_HEAD]);
 
-$this->registerJsFile('http://www.mergely.com/Mergely/lib/codemirror.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('http://www.mergely.com/Mergely/lib/codemirror.css', ["position" => $this::POS_HEAD]);
-
-$this->registerJsFile('http://www.mergely.com/Mergely/lib/mergely.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('http://www.mergely.com/Mergely/lib/mergely.css', ["position" => $this::POS_HEAD]);
 
 $statusmap = [
     'ok' =>'success',
@@ -156,10 +139,14 @@ foreach ($data['data'] as $group => $items) {
                         <button type="button" id="sql2file" class="btn btn-info" onclick="sql2file()">sql 2 file</button>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        <div id="compare">
+                <div class="row" style="height:calc(100vh - 250px);">
+					<iframe class="col-md-12"  id="compare2" src="index.php?r=dbtools/manage/diff" 
+							style="position:relative; left:0px; bottom:0px; right:0px; border:none; width:100%; height:100%;" ></iframe>
+                    <div class="col-md-12" style="display:none;">
+                        <div id="ccompare" style="display:none;">
                         </div>
+
+
                     </div>
                 </div>
             </div>
@@ -224,7 +211,7 @@ $this->registerJs(<<<JS
                 });
             },
             paging: true,
-            scrollY:        "600px",
+            scrollY:        "calc( 100vh - 350px )",
             scroller: true,
             sScrollX: false,
             data: dataTable,
@@ -321,26 +308,15 @@ $this->registerJs(<<<JS
     }
 
     $(document).ready(function () {
-        $('#compare').mergely({
-            width: 'auto',
-            height: 800,
-            cmsettings: {readOnly: true, lineNumbers: true}
-        });
-        $('#compare').mergely('resize', '');
-
         $cbLoad
 
         $('#contentTab a[href="' + settingsLoad('activeTab','#A') + '"]').tab('show');
 
         initItemTable();
-
-        $('#compare').mergely('resize', '');
-
     });
 
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
         settingsSave('activeTab', $(e.target).attr('href'));
-        $('#compare').mergely('resize', '');
     });
 
     function sql2file() {
@@ -460,9 +436,13 @@ $this->registerJs(<<<JS
 
     function loadData(data) {
         CurItem = data;
-
         if(CurItem == undefined) return;
 
+		var frameElement = $('#compare2');
+		if(frameElement && frameElement[0] && frameElement[0].contentWindow && frameElement[0].contentWindow.loadData){
+			frameElement[0].contentWindow.loadData({left:data.createfile,right:data.createdb });
+		};
+		
         settingsSave('$active|itemtable', CurItem.key);
 
         $('#itemname').html(CurItem.name);
@@ -488,17 +468,6 @@ $this->registerJs(<<<JS
         }
         else {
             $('#iteminfo').html('');
-        }
-
-        if (CurItem.createdb) {
-            $('#compare').mergely('rhs', CurItem.createdb);
-        } else {
-            $('#compare').mergely('rhs', '');
-        }
-        if (CurItem.createfile) {
-            $('#compare').mergely('lhs', CurItem.createfile);
-        } else {
-            $('#compare').mergely('lhs', '');
         }
 
         switch(CurItem.status)
