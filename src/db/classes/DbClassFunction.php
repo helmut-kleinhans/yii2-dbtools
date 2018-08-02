@@ -1,8 +1,8 @@
 <?php
 namespace DbTools\db\classes;
 
+use DbTools\db\DbConnection;
 use DbTools\db\DbException;
-use Yii;
 
 class DbClassFunction extends DbClassBase
 {
@@ -38,12 +38,14 @@ class DbClassFunction extends DbClassBase
 
 			$sStatement = "SELECT @fret";
 			$oQuery = $this->db->createCommand($sStatement);
-			$this->return = $oQuery->queryScalar();
+            if($this->db instanceof DbConnection) {
+                $this->db->setNoReconnect();
+            }
+            $this->return = $oQuery->queryScalar();
 		}
-		catch (\Exception $e)
-		{
-			throw new DbException($e);
-		}
+        catch (\Throwable $e){
+            throw new DbException($e);
+        }
 	}
 
 	public function getReturn()

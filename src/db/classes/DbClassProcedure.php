@@ -1,8 +1,8 @@
 <?php
 namespace DbTools\db\classes;
 
+use DbTools\db\DbConnection;
 use DbTools\db\DbException;
-use Yii;
 
 class DbClassProcedure extends DbClassBase
 {
@@ -98,14 +98,17 @@ class DbClassProcedure extends DbClassBase
 			{
 				$sStatement = "SELECT " . implode(', ', $this->outparams);
 				$oQuery = $this->db->createCommand($sStatement);
+				if($this->db instanceof DbConnection) {
+                    $this->db->setNoReconnect();
+                }
 				$this->outresults = $oQuery->queryOne();
 			}
 		}
-		catch (\Exception $e)
-		{
-			throw new DbException($e);
-		}
-	}
+		catch (\Throwable $e){
+            throw new DbException($e);
+        }
+
+    }
 
     public function getSelects() {
         return $this->selectresults;
