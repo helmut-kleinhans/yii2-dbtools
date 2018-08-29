@@ -52,11 +52,7 @@ class DbClassProcedure extends DbClassBase
 				$this->outparams[] = $executeparam;
 				break;
 			default:
-				var_dump($mode);
-				var_dump($name);
-				var_dump($value);
-				var_dump('unknown mode:' . $mode);
-				die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+			    throw new \Exception('unknown mode:' . $mode);
 		}
 		$this->executeparams[] = $executeparam;
 	}
@@ -104,7 +100,7 @@ class DbClassProcedure extends DbClassBase
 				$this->outresults = $oQuery->queryOne();
 			}
 		}
-		catch (\Throwable $e){
+		catch (\yii\db\Exception $e){
             throw new DbException($e);
         }
 

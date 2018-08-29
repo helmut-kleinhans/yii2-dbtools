@@ -106,10 +106,7 @@ class DbSchemaProcedures extends DbSchemaBase
 
 		if(!empty($brief))
         {
-            echo "forgot to process:\n";
-            var_dump($brief);
-            var_dump($data);
-            die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+            throw new \Exception('forgot to process: brief:' . print_r($brief,true).' data:'.print_r($data,true));
         }
 
 		return ['text'     => $info,

@@ -34,20 +34,16 @@ class DbGenValues
     public function create()
     {
         $final = [];
-        try {
-            $xml = simplexml_load_file(DbToolsModule::getInstance()->xmlValues);
-            // Find the customer
-            $params = [
-                'nextvalue' => 0,
-                'cat'       => '',
-                'cats'      => [],
-            ];
-            self::parseCat($final, $xml, $params);
-        }
-        catch (Exception $e) {
-            echo "Exception on line " . $e->getLine() . " of file " . $e->getFile() . " : " . $e->getMessage() . "<br/>";
-            die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
-        }
+        $xml = simplexml_load_file(DbToolsModule::getInstance()->xmlValues);
+        // Find the customer
+        $params = [
+            'nextvalue' => 0,
+            'cat'       => '',
+            'cats'      => [],
+        ];
+
+        self::parseCat($final, $xml, $params);
+
         $msg = '';
         $dbtypes = '';
         $dblines = '';
@@ -133,13 +129,10 @@ class DbValues
     {
         $name = (!empty($e) && isset($e['name'])) ? $e['name'] : 'UNKNOWN';
         $type = !empty($e) ? $e->getName() : 'UNKNOWN';
-        $cat = $p['cats'];
-        echo "Cat\t\t| " . implode(" / ", $p['cats']) . "
+        throw new \Exception("Cat\t\t| " . implode(" / ", $p['cats']) . "
 Node\t| $type
 Name\t| $name
-Error\t| $msg";
-        http_response_code(500);
-        die(1);
+Error\t| $msg");
     }
 
     private static function dbvalue2name($v)

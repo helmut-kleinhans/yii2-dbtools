@@ -88,14 +88,6 @@ foreach ($data['data'] as $group => $items) {
 
 ?>
 
-<div class="tools">
-    <?php
-    if (YII_DEBUG) {
-        echo '<button type="button" id="autogen" class="btn-warning btn-md" onclick="autogen()">autogen</button>';
-    }
-    ?>
-</div>
-
 <div class="row">
     <div class="col-md-3">
         <div class="row">
@@ -179,7 +171,6 @@ $imgDanger = Html::img($imgRoot.'/danger.png', [
                                 'title'   => 'warning',
                             ]);
 
-$urlAutogen = Yii::$app->getUrlManager()->createUrl('dbtools/manage/autogen');
 $urlSql2File = Yii::$app->getUrlManager()->createUrl('dbtools/manage/sql2file');
 $urlFile2Sql = Yii::$app->getUrlManager()->createUrl('dbtools/manage/file2sql');
 
@@ -416,23 +407,6 @@ $this->registerJs(<<<JS
             error: function (xhr, status, error) {
                 console.log(xhr.responseText);
                 alert('file2sql failed: ' + xhr.responseText);
-            }
-        });
-    }
-
-    function autogen() {
-        $.ajax({
-            url: '$urlAutogen',
-            processData: false,
-            contentType: false,
-            type: 'POST',
-            success: function () {
-                console.log('ok');
-                alert('autogen ok');
-            },
-            error: function (xhr, status, error) {
-                console.log(xhr.responseText);
-                alert('autogen failed:' + xhr.responseText);
             }
         });
     }

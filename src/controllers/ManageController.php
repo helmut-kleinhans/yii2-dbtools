@@ -2,7 +2,6 @@
 
 namespace DbTools\controllers;
 
-use DbTools\db\classes\DbGenClasses;
 use DbTools\db\schemas\DbSchemaBase;
 use DbTools\db\schemas\DbSchemaEvents;
 use DbTools\db\schemas\DbSchemaFunctions;
@@ -10,14 +9,10 @@ use DbTools\db\schemas\DbSchemaProcedures;
 use DbTools\db\schemas\DbSchemaTables;
 use DbTools\db\schemas\DbSchemaTriggers;
 use DbTools\db\schemas\DbSchemaViews;
-use DbTools\db\values\DbGenValues;
 use DbTools\DbToolsModule;
 use DbTools\helper\HelperGlobal;
 use yii\web\Controller;
 use Yii;
-use yii\data\ArrayDataProvider;
-use yii\filters\AccessControl;
-use yii\web\HttpException;
 
 class ManageController extends Controller {
 
@@ -63,21 +58,6 @@ class ManageController extends Controller {
             'active' => $dbconname,
             'data'   => $ret,
         ]);
-/*
-        $content = \Yii::$app->view->renderFile('@backend/views/test/dbdiff.php', [
-            'dbs' => $dbs,
-            'active' => $dbconname,
-            'data' => $ret]);
-        $view = \Yii::$app->view->renderFile('@backend/views/layouts/empty.php', ['content' => $content]);
-        return $view;*/
-    }
-
-    public function actionAutogen()
-    {
-        $c = new DbGenValues();
-        $c->create();
-        $c = new DbGenClasses();
-        $c->create();
     }
 
     public function actionSql2file()

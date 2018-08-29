@@ -84,8 +84,7 @@ class DbGenClasses
             $classname .= 'Func';
         }
         else {
-            var_dump('unknown type: ' . $type);
-            die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+            throw new \Exception('unknown type:' . $type);
         }
         $classname .= $name;
         $filepath .= $classname . '.php';
@@ -247,8 +246,7 @@ class ' . $classname . ' extends ' . $extends . '
             case 'INOUT':
                 return '$this->addParam(self::eP_InOut,\'' . $name . '\',$' . $name . ');';
             default:
-                var_dump('unknown inouttype: ' . $mode);
-                die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+                throw new \Exception('unknown inouttype:' . $mode);
         }
     }
 

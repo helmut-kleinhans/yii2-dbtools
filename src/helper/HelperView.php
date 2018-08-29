@@ -7,6 +7,6 @@ class HelperView
 {
 	public static function getFancyCheckbox($id,$label,$style,$checked=false,$onclick='')
 	{
-	    return '<label for="'.$id.'" class="btn btn-'.$style.'">'.$label.'<input type="checkbox" id="'.$id.'" class="badgebox"'.(empty($onclick)?'':' onclick="'.$onclick.'"').(empty($checked)?'':' checked="checked"').' /><span class="badge">&check;</span></label>';
+	    return '<label for="'.$id.'" class="btn btn-'.$style.'" style="padding: 0.2em 0.5em; margin:0.2em;">'.$label.'<input type="checkbox" id="'.$id.'" class="badgebox"'.(empty($onclick)?'':' onclick="'.$onclick.'"').(empty($checked)?'':' checked="checked"').' style="display:none;" /><span class="badge" style="left:2px;">&check;</span></label>';
 	}
 }

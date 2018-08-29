@@ -45,7 +45,7 @@ class DbConnection extends Connection
         Yii::info('Lost connection['.getmypid().'/'.$this->reconnectCurrentCount.']('.$e->getCode().'): ' . $e->getMessage(), __METHOD__);
 
         if (true === $this->isMaxReconnect()) {
-            Yii::error('ReconnectCounter is max', __METHOD__);
+            Yii::error('ReconnectCounter is max ['.getmypid().'/'.$this->reconnectCurrentCount.']('.$e->getCode().'): ' . $e->getMessage(), __METHOD__);
             throw $e;
         }
 

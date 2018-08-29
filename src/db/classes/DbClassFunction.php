@@ -43,7 +43,7 @@ class DbClassFunction extends DbClassBase
             }
             $this->return = $oQuery->queryScalar();
 		}
-        catch (\Throwable $e){
+        catch (\yii\db\Exception $e){
             throw new DbException($e);
         }
 	}

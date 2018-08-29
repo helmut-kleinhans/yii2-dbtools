@@ -54,16 +54,7 @@ class DbSchemaBase
 			$files[$fileName]['filepath'] = $value;
 		}
 
-		try
-		{
-			$list = $this->getList();
-		}
-		catch (\Exception $e)
-		{
-			var_dump($e);
-			die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
-		}
-
+		$list = $this->getList();
 
 		if($this->doOnlySvn) {
 			foreach ($files as $name => $value) {
@@ -82,16 +73,7 @@ class DbSchemaBase
 		{
 			foreach ($list as $name => $value)
 			{
-				try
-				{
-                    $ret[$name]['createdb'] = trim(str_replace("\r", "", $this->getCreate($name)));
-				}
-				catch (\Exception $e)
-				{
-					$ret[$name]['warnings'][] = $e->getCode() . '-' . $e->getMessage();
-					var_dump($e);
-					die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
-				}
+                $ret[$name]['createdb'] = trim(str_replace("\r", "", $this->getCreate($name)));
 			}
 		}
 		$ret = $this->buildInfo($ret);
@@ -114,17 +96,20 @@ class DbSchemaBase
 		$ret = $data;
 		foreach ($data as $name => $value)
 		{
-			$ret[$name]['parse'] = $this->_doInfo($value);
-			if (isset($ret[$name]['parse']['warnings']))
-			{
-				$ret[$name]['warnings'] = $ret[$name]['parse']['warnings'];
-				unset($ret[$name]['parse']['warnings']);
-			}
-			if (isset($ret[$name]['parse']['body']))
-			{
-				$ret[$name]['body'] = $ret[$name]['parse']['body'];
-				unset($ret[$name]['parse']['body']);
-			}
+		    try {
+                $ret[$name]['parse'] = $this->_doInfo($value);
+                if (isset($ret[$name]['parse']['warnings'])) {
+                    $ret[$name]['warnings'] = $ret[$name]['parse']['warnings'];
+                    unset($ret[$name]['parse']['warnings']);
+                }
+                if (isset($ret[$name]['parse']['body'])) {
+                    $ret[$name]['body'] = $ret[$name]['parse']['body'];
+                    unset($ret[$name]['parse']['body']);
+                }
+            } catch (\Throwable $e) {
+		        $msg = 'class('.get_called_class().') name('.$name.') msg('.$e->getMessage().')';
+		        throw new \Exception($msg,DbValues::eError_General_Error,$e);
+            }
 		}
 
 		return $ret;
@@ -354,12 +339,8 @@ class DbSchemaBase
             $ret[$currentcat][] = $current;
             $currentcat = 'unknown';
             $current[] = $row;
-            echo 'Unknown Brief Type!';
-            echo '<pre>';
-            var_dump($info);
-            var_dump($row);
-            echo '/<pre>';
-            die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+            $msg = 'Unknown Brief Type! row:'.$row.' info:'.$info;
+            throw new \Exception($msg);
         }
         if (!empty($current)) {
             $ret[$currentcat][] = $current;
@@ -508,10 +489,7 @@ class DbSchemaBase
             }
 
             if(!empty($in)) {
-                echo "forgot to process:\n";
-                var_dump($in);
-                var_dump($out);
-                die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+                throw new \Exception("forgot to process:\nin:".print_r($in,true)."\nout:".print_r($out,true));
             }
         }
 
@@ -573,52 +551,6 @@ class DbSchemaBase
         return $out;
 	}
 
-	public static function parseSelect($body)
-	{
-		die('NOT FINISHED '.__FUNCTION__ . '::' . __LINE__);
-
-		$ret = [];
-		$body = self::removeComments($body);
-		$body = trim(str_replace("\t", " ", $body));
-		$body = trim(str_replace("\r", "", $body));
-
-		die($body);
-
-		$pos = 0;
-
-		while ($endpos = strpos($body, ';', $pos+1))
-		{
-			if($endpos<0) {
-				echo 'Parse failed';
-				var_dump($pos);
-				var_dump($endpos);
-				var_dump(substr($body, $pos, 40));
-				var_dump($body);
-				die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
-			}
-
-			$statement = trim(substr($body, $pos, $endpos));
-
-			if(strtoupper(substr($statement,0,6)) == 'SELECT') {
-				var_dump($statement);
-				die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
-			}
-			$pos = $endpos;
-
-			/*
-			$pos += strlen($find);
-			$nextchar = substr($body, $pos, 1);
-			$pos += 1;
-			if ($nextchar == ' ' || $nextchar == '(' || $nextchar == '`' || $nextchar == '\'' || $nextchar == '"' || $nextchar == "\n" || $nextchar == "\r" || $nextchar == "\t")
-			{
-				$ret[$type][] = $find;
-				break;
-			}*/
-		}
-
-		return $ret;
-	}
-
     public static function checkHandler($dec)
     {
         $s = array_values(array_filter(explode(' ', $dec), 'strlen'));
@@ -673,8 +605,7 @@ class DbSchemaBase
 					$ret['value'][] = trim($p);
 					break;
 				default:
-					var_dump($dec);
-					die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);
+				    throw new \Exception('unknown declare-next:'.print_r($dec,true));
 			}
 		}
 		$ret['type'] = trim(strtoupper(implode(' ',$ret['type'])));
