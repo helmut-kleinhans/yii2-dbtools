@@ -2,19 +2,7 @@
 use yii\helpers\Html;
 use yii\bootstrap\ActiveForm;
 
-$this->title = 'Manage DBs';
-/*
-$this->registerJsFile(Yii::getAlias('@web') . "/js/jquery-2.2.4.min.js", ["position" => $this::POS_HEAD]);
-$this->registerJsFile(Yii::getAlias('@web') . "/js/codemirror.js", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/codemirror.css", ["position" => $this::POS_HEAD]);
-$this->registerJsFile(Yii::getAlias('@web') . "/js/mergely.js", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/mergely.css", ["position" => $this::POS_HEAD]);
-$this->registerJsFile(Yii::getAlias('@web') . "/js/bootstrap.js", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/bootstrap.css", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/font-awesome.min.css", ["position" => $this::POS_HEAD]);
-$this->registerCssFile(Yii::getAlias('@web') . "/css/general.css", ["position" => $this::POS_HEAD]);
-
-*/
+$this->title = 'Manage DBs - '.$active;
 
 $dbmanageasset = \DbTools\DbManageAsset::register($this);
 
@@ -46,69 +34,59 @@ $statusmap = [
 
 
 $jsonDataTable = [];
-foreach ($data['data'] as $group => $items) {
-    if (empty($items)) {
-        continue;
-    }
-    if (!is_array($items)) {
-        continue;
-    }
-    //ksort($items);
-    //var_dump($data); die();
-    foreach ($items as $item => $info) {
-        $name = $item;
-        $status = '';
-        if ($info['createdb'] == $info['createfile']) {
-            $status = 'ok';
+if(isset($data['data'])) {
+    foreach ($data['data'] as $group => $items) {
+        if (empty($items)) {
+            continue;
         }
-        else {
-            if (empty($info['createdb'])) {
-                $status = 'missing';
+        if (!is_array($items)) {
+            continue;
+        }
+        //ksort($items);
+        //var_dump($data); die();
+        foreach ($items as $item => $info) {
+            $name = $item;
+            $status = '';
+            if ($info['createdb'] == $info['createfile']) {
+                $status = 'ok';
             }
             else {
-                if (empty($info['createfile'])) {
-                    $status = 'new';
+                if (empty($info['createdb'])) {
+                    $status = 'missing';
                 }
                 else {
-                    $status = 'different';
-                    //var_dump($info['createdb']);
-                    //var_dump($info['createfile']);
+                    if (empty($info['createfile'])) {
+                        $status = 'new';
+                    }
+                    else {
+                        $status = 'different';
+                        //var_dump($info['createdb']);
+                        //var_dump($info['createfile']);
+                    }
                 }
             }
+            $info['status'] = $status;
+            $info['dbconname'] = $active;
+            $info['group'] = $group;
+            $info['name'] = $name;
+            $info['key'] = $active . '|' . $group . '|' . $name;
+            //echo("<option class='st_" . $status . "' value='" . $name . "'>&nbsp;&nbsp;" . $name . "</option>\n");
+            $jsonDataTable[] = $info;
         }
-        $info['status'] = $status;
-        $info['dbconname'] = $active;
-        $info['group'] = $group;
-        $info['name'] = $name;
-        $info['key'] = $active . '|' . $group . '|' . $name;
-        //echo("<option class='st_" . $status . "' value='" . $name . "'>&nbsp;&nbsp;" . $name . "</option>\n");
-        $jsonDataTable[] = $info;
     }
 }
-
 ?>
 
 <div class="row">
     <div class="col-md-3">
-        <div class="row">
-            <ul class="nav nav-tabs">
-                <?php
-                    foreach ($dbs as $dbconname => $db) {
-                        echo '<li'.(($dbconname==$active)?' class="active"':'').'><a href="'.Yii::$app->getUrlManager()->createUrl(['dbtools/manage','dbconname'=>$dbconname]).'">'.$dbconname.'</a></li>';
-                    }
-                ?>
-            </ul>
-        </div>
         <fieldset id="templates">
             <div class="col">
-
                 <?php
                 foreach ($statusmap as $status=>$style)
                 {
                     echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_'.$status,$status,$style,false,'updateItemTable()');
                 }
                 ?>
-
             </div>
             <div class="col">
                 <table id="itemtable" class="display compact" width="100%" cellspacing="0"></table>

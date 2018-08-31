@@ -20,7 +20,7 @@ class ManageController extends Controller {
 
     public function __construct($id, $module, $config = [])
     {
-        $this->dbconname = HelperGlobal::paramOptional($_REQUEST, 'dbconname','');
+        $this->dbconname = HelperGlobal::paramOptional($_REQUEST, 'dbconname','db');
         parent::__construct($id, $module, $config);
         $this->enableCsrfValidation = false;
     }
@@ -32,21 +32,16 @@ class ManageController extends Controller {
 
     public function actionIndex()
     {
-        $dbs = HelperGlobal::getDBs();
         $ret = [];
         $db = NULL;
 
         $dbconname = $this->dbconname;
         //$dbconname = 'dbEM';
 
-        if(!empty($dbconname) && isset($dbs[$dbconname])) {
-            $db = $dbs[$dbconname];
-        } else {
-            foreach ($dbs as $dbcn => $dbx) {
-                $dbconname = $dbcn;
-                $db = $dbx;
-                break;
-            }
+        try {
+            $db = Yii::$app->$dbconname;
+        } catch(\Throwable $e) {
+            throw new \Exception("db connection is unknown: ".$dbconname);
         }
 
         if(!empty($dbconname) && !empty($db)) {
@@ -54,7 +49,6 @@ class ManageController extends Controller {
         }
 
         return $this->render('index', [
-            'dbs'    => $dbs,
             'active' => $dbconname,
             'data'   => $ret,
         ]);
