@@ -5,26 +5,6 @@ use yii\bootstrap\ActiveForm;
 $this->title = 'Manage DBs - '.$active;
 
 $dbmanageasset = \DbTools\DbManageAsset::register($this);
-
-
-$this->registerJsFile('https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css', ["position" => $this::POS_HEAD]);
-
-$this->registerJsFile('https://cdn.datatables.net/1.10.15/js/dataTables.bootstrap.min.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('https://cdn.datatables.net/1.10.15/css/dataTables.bootstrap.min.css', ["position" => $this::POS_HEAD]);
-
-$this->registerJsFile('https://cdn.datatables.net/select/1.2.2/js/dataTables.select.min.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('https://cdn.datatables.net/select/1.2.2/css/select.bootstrap.min.css', ["position" => $this::POS_HEAD]);
-
-$this->registerJsFile('https://cdn.datatables.net/scroller/1.4.2/js/dataTables.scroller.min.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('https://cdn.datatables.net/scroller/1.4.2/css/scroller.dataTables.min.css', ["position" => $this::POS_HEAD]);
-
-$this->registerJsFile('http://www.mergely.com/Mergely/lib/codemirror.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('http://www.mergely.com/Mergely/lib/codemirror.css', ["position" => $this::POS_HEAD]);
-
-$this->registerJsFile('http://www.mergely.com/Mergely/lib/mergely.js', ["position" => $this::POS_END, "depends"=>[yii\web\JqueryAsset::className()]]);
-$this->registerCssFile('http://www.mergely.com/Mergely/lib/mergely.css', ["position" => $this::POS_HEAD]);
-
 $statusmap = [
     'ok' =>'success',
     'new' =>'primary',
@@ -32,9 +12,10 @@ $statusmap = [
     'different' =>'warning',
 ];
 
-
 $jsonDataTable = [];
+
 if(isset($data['data'])) {
+    
     foreach ($data['data'] as $group => $items) {
         if (empty($items)) {
             continue;
@@ -42,8 +23,8 @@ if(isset($data['data'])) {
         if (!is_array($items)) {
             continue;
         }
-        //ksort($items);
-        //var_dump($data); die();
+
+
         foreach ($items as $item => $info) {
             $name = $item;
             $status = '';
@@ -60,8 +41,6 @@ if(isset($data['data'])) {
                     }
                     else {
                         $status = 'different';
-                        //var_dump($info['createdb']);
-                        //var_dump($info['createfile']);
                     }
                 }
             }
@@ -480,4 +459,7 @@ $this->registerJs(<<<JS
 
 JS
 ,$this::POS_END);
+
+
+
 ?>
