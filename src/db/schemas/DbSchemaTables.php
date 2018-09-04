@@ -9,9 +9,9 @@ class DbSchemaTables extends DbSchemaBase
     const cDumpHeader = "\n\n#CONSTANT DUMP\n\n";
     private static $schema = [];
 
-    public function __construct($dbconname, $db)
+    public function __construct($dbName, $db)
     {
-        parent::__construct($dbconname, $db, self::cType);
+        parent::__construct($dbName, $db, self::cType);
     }
 
     public function getList()

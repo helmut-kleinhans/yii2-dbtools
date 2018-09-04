@@ -8,9 +8,9 @@ class DbSchemaFunctions extends DbSchemaProcedures
 {
 	const cType = 'functions';
 
-	public function __construct($dbconname, $db)
+	public function __construct($dbName, $db)
 	{
-		DbSchemaBase::__construct($dbconname, $db, self::cType);
+		DbSchemaBase::__construct($dbName, $db, self::cType);
 	}
 
 	public function getList()

@@ -25,19 +25,19 @@ class DbGenClasses
     {
         $dbs = HelperGlobal::getDBs();
 
-        foreach ($dbs as $dbconname => $db) {
-            FileHelper::removeDirectory($this->dir . '/' . $dbconname);
-            FileHelper::createDirectory($this->dir . '/' . $dbconname);
-            $this->createDb($dbconname, $db);
+        foreach ($dbs as $dbName => $db) {
+            FileHelper::removeDirectory($this->dir . '/' . $dbName);
+            FileHelper::createDirectory($this->dir . '/' . $dbName);
+            $this->createDb($dbName, $db);
         }
     }
 
-    private function createDb($dbconname, $db)
+    private function createDb($dbName, $db)
     {
         $ret = [];
         $classes = [];
-        $classes[DbSchemaProcedures::cType] = new DbSchemaProcedures($dbconname, $db);
-        $classes[DbSchemaFunctions::cType] = new DbSchemaFunctions($dbconname, $db);
+        $classes[DbSchemaProcedures::cType] = new DbSchemaProcedures($dbName, $db);
+        $classes[DbSchemaFunctions::cType] = new DbSchemaFunctions($dbName, $db);
 
         foreach ($classes as $type => $c) {
             $c->doFormat = false;
@@ -65,15 +65,15 @@ class DbGenClasses
                 if (!isset($data['parse']) || !isset($data['parse']['export']) || empty($data['parse']['export'])) {
                     continue;
                 }
-                $this->createClass($dbconname, $aname, $type, $data);
+                $this->createClass($dbName, $aname, $type, $data);
             }
         }
     }
 
-    private function createClass($dbconname, $name, $type, $data)
+    private function createClass($dbName, $name, $type, $data)
     {
-        $filepath = $this->dir . '/' . $dbconname . '/';
-        $classname = $dbconname;
+        $filepath = $this->dir . '/' . $dbName . '/';
+        $classname = $dbName;
 
         if ($type == DbSchemaProcedures::cType) {
             $extends = 'DbClassProcedure';
@@ -154,7 +154,7 @@ class DbGenClasses
 
         $out[] = '<?php
         
-namespace DbToolsExport\\dbclasses\\' . $dbconname . ';
+namespace DbToolsExport\\dbclasses\\' . $dbName . ';
 
 use Yii;
 use DbTools\\db\classes\\' . $extends . ';
@@ -191,7 +191,7 @@ class ' . $classname . ' extends ' . $extends . '
 
         $out[] = '	public function __construct(' . implode(",", $cparams) . ')
 	{
-		parent::__construct(Yii::$app->' . $dbconname . ',\'' . $name . '\');';
+		parent::__construct(Yii::$app->' . $dbName . ',\'' . $name . '\');';
 
         foreach ($addparam as $v) {
             $out[] = "\t\t" . $v;

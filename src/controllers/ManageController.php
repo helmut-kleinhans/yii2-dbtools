@@ -16,13 +16,60 @@ use Yii;
 
 class ManageController extends Controller {
 
-    private $dbconname;
+    const DEFAULT_DB_NAME = 'db';
+
+    /** @var string */
+    private $dbName = self::DEFAULT_DB_NAME;
+
+    /** @var \yii\db\Connection */
+    private $db;
 
     public function __construct($id, $module, $config = [])
     {
-        $this->dbconname = HelperGlobal::paramOptional($_REQUEST, 'dbconname','db');
         parent::__construct($id, $module, $config);
+        $this->setDb();
         $this->enableCsrfValidation = false;
+    }
+
+    private function setDb()
+    {
+        $db = HelperGlobal::paramOptional($_REQUEST, 'dbName',NULL);
+        if($db===NULL) {
+            $db = HelperGlobal::paramOptional($_REQUEST, 'db',NULL);
+            if($db===NULL) {
+                $this->setDefaultDb();
+
+                return;
+            }
+        }
+
+        $this->dbName = $db;
+
+        try {
+            $this->db = Yii::$app->$db;
+        } catch(\Throwable $e) {
+            throw new \Exception("given db is unknown/wrong: $db");
+        }
+    }
+
+    private function setDefaultDb()
+    {
+        $db = $this->dbName;
+        try {
+            $this->db = Yii::$app->$db;
+            return;
+        } catch(\Throwable $e) {
+            //ignore
+        }
+
+        $dbs = HelperGlobal::getDBs();
+        foreach($dbs as $n=>$c) {
+            $this->dbName = $n;
+            $this->db = $c;
+            return;
+        }
+
+        throw new \Exception("No db connection found in config!");
     }
 
     public function behaviors()
@@ -32,122 +79,76 @@ class ManageController extends Controller {
 
     public function actionIndex()
     {
-        $ret = [];
-        $db = NULL;
-
-        $dbconname = $this->dbconname;
-        //$dbconname = 'dbEM';
-
-        try {
-            $db = Yii::$app->$dbconname;
-        } catch(\Throwable $e) {
-            throw new \Exception("db connection is unknown: ".$dbconname);
-        }
-
-        if(!empty($dbconname) && !empty($db)) {
-            $ret = $this->_getInfo($dbconname, $db);
-        }
-
         return $this->render('index', [
-            'active' => $dbconname,
-            'data'   => $ret,
+            'active' => $this->dbName,
+            'data'   => $this->_getInfo(),
         ]);
     }
 
     public function actionSql2file()
     {
-        $dbconname = $this->dbconname;
         $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
         $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
-        if (empty($dbconname) || empty($group) || empty($name))
+        if (empty($group) || empty($name))
         {
-            throw new \Exception('Empty param', 500);
+            throw new \Exception('Empty param');
         }
-        $db = Yii::$app->$dbconname;
-        if (empty($db))
-        {
-            throw new \Exception('db failed: ' . $dbconname, 500);
-        }
-        $c = NULL;
-        switch ($group)
-        {
-            case DbSchemaProcedures::cType:
-                $c = new DbSchemaProcedures($dbconname, $db);
-                break;
-            case DbSchemaTriggers::cType:
-                $c = new DbSchemaTriggers($dbconname, $db);
-                break;
-            case DbSchemaTables::cType:
-                $c = new DbSchemaTables($dbconname, $db);
-                break;
-            case DbSchemaEvents::cType:
-                $c = new DbSchemaEvents($dbconname, $db);
-                break;
-            case DbSchemaViews::cType:
-                $c = new DbSchemaViews($dbconname, $db);
-                break;
-            case DbSchemaFunctions::cType:
-                $c = new DbSchemaFunctions($dbconname, $db);
-                break;
-            default:
-                throw new \Exception('Unknown group: ' . $group, 500);
-        }
+
+        $c = $this->group2class($group);
         $c->sql2file($name);
     }
 
     public function actionFile2sql()
     {
-        $dbconname = $this->dbconname;
         $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
         $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
-        if (empty($dbconname) || empty($group) || empty($name))
+        if (empty($group) || empty($name))
         {
             throw new \Exception('Empty param', 500);
         }
-        $db = Yii::$app->$dbconname;
-        if (empty($db))
-        {
-            throw new \Exception('db failed: ' . $dbconname, 500);
-        }
-        $c = NULL;
+
+        $c = $this->group2class($group);
+        $c->file2sql($name);
+    }
+
+    private function group2class(string $group) : DbSchemaBase
+    {
         switch ($group)
         {
             case DbSchemaProcedures::cType:
-                $c = new DbSchemaProcedures($dbconname, $db);
+                return new DbSchemaProcedures($this->dbName, $this->db);
                 break;
             case DbSchemaTriggers::cType:
-                $c = new DbSchemaTriggers($dbconname, $db);
+                return new DbSchemaTriggers($this->dbName, $this->db);
                 break;
             case DbSchemaTables::cType:
-                $c = new DbSchemaTables($dbconname, $db);
+                return new DbSchemaTables($this->dbName, $this->db);
                 break;
             case DbSchemaEvents::cType:
-                $c = new DbSchemaEvents($dbconname, $db);
+                return new DbSchemaEvents($this->dbName, $this->db);
                 break;
             case DbSchemaViews::cType:
-                $c = new DbSchemaViews($dbconname, $db);
+                return new DbSchemaViews($this->dbName, $this->db);
                 break;
             case DbSchemaFunctions::cType:
-                $c = new DbSchemaFunctions($dbconname, $db);
+                return new DbSchemaFunctions($this->dbName, $this->db);
                 break;
             default:
                 throw new \Exception('Unknown group: ' . $group, 500);
         }
-        $c->file2sql($name);
     }
 
-    private function _getInfo($dbconname, $db)
+    private function _getInfo()
     {
         $ret = [];
-        //echo '<hr><h1>'.$dbconname.'</h1>';
-        $ret['info']['dbconname'] = $dbconname;
+        $ret['info']['dbName'] = $this->dbName;
 
-        $classes[DbSchemaTables::cType] = new DbSchemaTables($dbconname, $db);
-        $classes[DbSchemaProcedures::cType] = new DbSchemaProcedures($dbconname, $db);
-        $classes[DbSchemaViews::cType] = new DbSchemaViews($dbconname, $db);
-        $classes[DbSchemaFunctions::cType] = new DbSchemaFunctions($dbconname, $db);
-        $classes[DbSchemaTriggers::cType] = new DbSchemaTriggers($dbconname, $db);
-        $classes[DbSchemaEvents::cType] = new DbSchemaEvents($dbconname, $db);
+        $classes[DbSchemaTables::cType] = new DbSchemaTables($this->dbName, $this->db);
+        $classes[DbSchemaProcedures::cType] = new DbSchemaProcedures($this->dbName, $this->db);
+        $classes[DbSchemaViews::cType] = new DbSchemaViews($this->dbName, $this->db);
+        $classes[DbSchemaFunctions::cType] = new DbSchemaFunctions($this->dbName, $this->db);
+        $classes[DbSchemaTriggers::cType] = new DbSchemaTriggers($this->dbName, $this->db);
+        $classes[DbSchemaEvents::cType] = new DbSchemaEvents($this->dbName, $this->db);
 
         foreach ($classes as $type => $c)
         {

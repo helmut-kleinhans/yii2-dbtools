@@ -8,9 +8,9 @@ class DbSchemaTriggers extends DbSchemaBase
 {
 	const cType = 'triggers';
 
-	public function __construct($dbconname, $db)
+	public function __construct($dbName, $db)
 	{
-		parent::__construct($dbconname, $db, self::cType);
+		parent::__construct($dbName, $db, self::cType);
 	}
 
 	public function getList()
@@ -108,7 +108,7 @@ class DbSchemaTriggers extends DbSchemaBase
  <tr><th>Event</th><th>Action</th><th>On</th></tr>
  </thead>
  <tbody class="tbody">
- <tr><td>' . $data['helper']['EVENT_MANIPULATION'] . '</td><td>' . $data['helper']['ACTION_TIMING'] . '</td><td>' . self::getLink($this->dbconname, DbSchemaTables::cType, $data['helper']['EVENT_OBJECT_TABLE']) . '</td></tr>
+ <tr><td>' . $data['helper']['EVENT_MANIPULATION'] . '</td><td>' . $data['helper']['ACTION_TIMING'] . '</td><td>' . self::getLink($this->dbName, DbSchemaTables::cType, $data['helper']['EVENT_OBJECT_TABLE']) . '</td></tr>
  </tbody>
  </table>';
 		if (!empty($brief) && isset($brief['brief']) && !empty($brief['brief']))

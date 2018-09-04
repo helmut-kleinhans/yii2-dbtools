@@ -45,7 +45,7 @@ if(isset($data['data'])) {
                 }
             }
             $info['status'] = $status;
-            $info['dbconname'] = $active;
+            $info['dbName'] = $active;
             $info['group'] = $group;
             $info['name'] = $name;
             $info['key'] = $active . '|' . $group . '|' . $name;
@@ -295,7 +295,7 @@ $this->registerJs(<<<JS
         if (!CurItem) return;
 
         var formData = new FormData();
-        formData.append('dbconname', CurItem.dbconname);
+        formData.append('dbName', CurItem.dbName);
         formData.append('group', CurItem.group);
         formData.append('name', CurItem.name);
 
@@ -337,7 +337,7 @@ $this->registerJs(<<<JS
         }
 
         var formData = new FormData();
-        formData.append('dbconname', CurItem.dbconname);
+        formData.append('dbName', CurItem.dbName);
         formData.append('group', CurItem.group);
         formData.append('name', CurItem.name);
 

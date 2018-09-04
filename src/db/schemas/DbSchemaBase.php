@@ -9,7 +9,7 @@ use yii\helpers\FileHelper;
 
 class DbSchemaBase
 {
-	public $dbconname;
+	public $dbName;
 	public $db;
 	public $dir;
     public $doCreate=true;
@@ -18,11 +18,11 @@ class DbSchemaBase
 
     private static $databases = [];
 
-	public function __construct($dbconname, $db, $subdir)
+	public function __construct($dbName, $db, $subdir)
 	{
-		$this->dbconname = $dbconname;
+		$this->dbName = $dbName;
 		$this->db = $db;
-        $this->dir = DbToolsModule::getInstance()->exportPath . '/export/' . $dbconname . '/' . $subdir;
+        $this->dir = DbToolsModule::getInstance()->exportPath . '/export/' . $dbName . '/' . $subdir;
     }
 
     protected function getDbName()
@@ -172,7 +172,7 @@ class DbSchemaBase
                     sort($tval);
                     foreach ($tval as $tname)
                     {
-                        $body .= '<li>' . self::getLink($this->dbconname, $ttype, $tname) . '</li>';
+                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
                     }
                     $body .= '</ul></td>';
                 }
@@ -194,7 +194,7 @@ class DbSchemaBase
                     sort($tval);
                     foreach ($tval as $tname)
                     {
-                        $body .= '<li>' . self::getLink($this->dbconname, $ttype, $tname) . '</li>';
+                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
                     }
                     $body .= '</ul></td>';
                 }
@@ -221,7 +221,7 @@ class DbSchemaBase
                             {
                                 continue;
                             }
-                            $slist .= '<li>' . self::getLink($this->dbconname, $ttype, $tname) . '</li>';
+                            $slist .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
                         }
                         $list .= empty($slist) ? '' : '<li>' . $ttype . '</li><ul>' . $slist . '</ul>';
                     }
