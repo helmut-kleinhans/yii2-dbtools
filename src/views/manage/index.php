@@ -140,6 +140,8 @@ foreach ($statusmap as $status=>$style)
     $cbSave.='settingsSave("filter.'.$status.'", $("#cb_filter_'.$status.'").prop("checked"));';
 }
 
+$customer = isset($_REQUEST['customer']) ? $_REQUEST['customer'] : '';
+
 $this->registerJs(<<<JS
     var table = null;
     var dataTable = $jsonDataTable;
@@ -298,6 +300,7 @@ $this->registerJs(<<<JS
         formData.append('dbName', CurItem.dbName);
         formData.append('group', CurItem.group);
         formData.append('name', CurItem.name);
+        formData.append('customer', '$customer');
 
         $.ajax({
             url: '$urlSql2File',
@@ -340,6 +343,7 @@ $this->registerJs(<<<JS
         formData.append('dbName', CurItem.dbName);
         formData.append('group', CurItem.group);
         formData.append('name', CurItem.name);
+        formData.append('customer', '$customer');
 
         $.ajax({
             url: '$urlFile2Sql',
