@@ -11,6 +11,11 @@ class DbConnection extends Connection
      * @var string
      */
     public $commandClass = 'DbTools\db\DbCommand';
+
+    /**
+     * @var bool
+     */
+    public $blockReconnect = false;
     
 	/**
 	 * ReCreates the PDO instance.
@@ -33,6 +38,10 @@ class DbConnection extends Connection
 	
     public function processException($e)
     {
+        if ($this->blockReconnect) {
+            throw $e;
+        }
+
         if($e->getCode() == 45000 || $e->getCode() == 42000) {
             throw $e;
         }
@@ -51,10 +60,5 @@ class DbConnection extends Connection
 
         $this->incrementReconnectCount();
         $this->reconnect();
-    }
-
-    public function setNoReconnect()
-    {
-        $this->reconnectCurrentCount = $this->reconnectMaxCount;
     }
 }

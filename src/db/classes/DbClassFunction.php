@@ -1,6 +1,7 @@
 <?php
 namespace DbTools\db\classes;
 
+use DbTools\db\DbBlockReconnect;
 use DbTools\db\DbConnection;
 use DbTools\db\DbException;
 
@@ -38,10 +39,17 @@ class DbClassFunction extends DbClassBase
 
 			$sStatement = "SELECT @fret";
 			$oQuery = $this->db->createCommand($sStatement);
+
             if($this->db instanceof DbConnection) {
-                $this->db->setNoReconnect();
+                $blockreconnect = new DbBlockReconnect($this->db);
+                try {
+                    $this->return = $oQuery->queryScalar();
+                } finally {
+                    unset($blockreconnect);
+                }
+            } else {
+                $this->return = $oQuery->queryScalar();
             }
-            $this->return = $oQuery->queryScalar();
 		}
         catch (\yii\db\Exception $e){
             throw new DbException($e);

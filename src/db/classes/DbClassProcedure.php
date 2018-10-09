@@ -1,6 +1,7 @@
 <?php
 namespace DbTools\db\classes;
 
+use DbTools\db\DbBlockReconnect;
 use DbTools\db\DbConnection;
 use DbTools\db\DbException;
 
@@ -94,10 +95,17 @@ class DbClassProcedure extends DbClassBase
 			{
 				$sStatement = "SELECT " . implode(', ', $this->outparams);
 				$oQuery = $this->db->createCommand($sStatement);
-				if($this->db instanceof DbConnection) {
-                    $this->db->setNoReconnect();
+
+                if($this->db instanceof DbConnection) {
+                    $blockreconnect = new DbBlockReconnect($this->db);
+                    try {
+                        $this->outresults = $oQuery->queryOne();
+                    } finally {
+                        unset($blockreconnect);
+                    }
+                } else {
+                    $this->outresults = $oQuery->queryOne();
                 }
-				$this->outresults = $oQuery->queryOne();
 			}
 		}
 		catch (\yii\db\Exception $e){
