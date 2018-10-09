@@ -60,8 +60,8 @@ class DbLock
         }
 
         Yii::info('release lock db[' . $this->key . ']', 'dblock');
-        $statement = "RELEASE_LOCK('" . $this->key . "')";
+        $statement = "SELECT RELEASE_LOCK('" . $this->key . "')";
         $query = $this->db->createCommand($statement);
-        $query->execute();
+        $res = $query->queryScalar();
     }
 }
