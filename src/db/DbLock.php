@@ -40,8 +40,6 @@ class DbLock
         $query = $this->db->createCommand($statement);
         $res = $query->queryScalar();
 
-        var_dump($res);
-
         if ($res == 1) {
             $this->isLocked = true;
 
