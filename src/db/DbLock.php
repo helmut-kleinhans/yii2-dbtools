@@ -21,6 +21,7 @@ class DbLock
         $this->db = $db;
         $this->key = $key;
         $this->timeout = $timeout;
+        $this->get();
     }
 
     public function __destruct()
