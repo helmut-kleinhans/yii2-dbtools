@@ -28,6 +28,6 @@ class AutogenController extends Controller
         Yii::info("Classes start");
         $c = new DbGenClasses();
         $c->create();
-        Yii::info("Classes start");
+        Yii::info("Classes end");
     }
 }
