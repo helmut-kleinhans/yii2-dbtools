@@ -412,8 +412,8 @@ class DbSchemaBase
         $param = [];
         $return = '';
         $data = self::getBetween($body, '/**', '*/');
-        if (!empty($data) && isset($data[0])) {
-            $in = self::brief2array($data[0]);
+        if (!empty($data)) {
+            $in = self::brief2array(array_shift($data));
 
             //----------------------------------------------------------------------------------------------
             // To Text
