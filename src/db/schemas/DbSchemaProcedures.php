@@ -145,4 +145,10 @@ class DbSchemaProcedures extends DbSchemaBase
 
         return $this->executeSql($data);
     }
+
+    public function drop($name)
+    {
+        $sql = 'DROP PROCEDURE IF EXISTS `'.$name.'`';
+        return $this->executeSql($sql);
+    }
 }

@@ -9,6 +9,8 @@ use yii\helpers\FileHelper;
 
 class DbSchemaBase
 {
+    const REMOVED_FILE_CONTENT = '--REMOVED--';
+
 	public $dbName;
 	public $db;
 	public $dir;
@@ -210,7 +212,7 @@ class DbSchemaBase
                 $body = '';
                 foreach ($errors as $error)
                 {
-                    $body .= '<tr' . (!empty($error['warning']) ? ' class="alert alert-danger"' : '') . '><td>' . $error['name'] . '</td><td>' . $error['value'] . '</td><td>' . $error['message'] . '</td><td>';
+                    $body .= '<tr' . (!empty($error['warnings']) ? ' class="alert alert-danger"' : '') . '><td>' . $error['name'] . '</td><td>' . $error['value'] . '</td><td>' . $error['message'] . '</td><td>';
                     $list = '';
                     foreach ($error['uses'] as $ttype => $tval)
                     {
@@ -226,7 +228,7 @@ class DbSchemaBase
                         $list .= empty($slist) ? '' : '<li>' . $ttype . '</li><ul>' . $slist . '</ul>';
                     }
                     $body .= (empty($list)) ? '&nbsp;' : '<ul>' . $list . '</ul>';
-                    $body .= '</td><td>' . $error['warning'] . '</td></tr>';
+                    $body .= '</td><td>' . implode('<br>',$error['warnings']) . '</td></tr>';
                 }
                 $ret = '<h4>Errors</h4>
 <table class="table table-sm">
@@ -259,18 +261,32 @@ class DbSchemaBase
     public function sql2file($name)
     {
         $create = $this->getCreate($name);
-        if (!$create)
-        {
+        if (!$create) {
             throw new \Exception('getCreate failed', 500);
         }
         $filepath = $this->dir . '/' . $name . '.sql';
-        if (!file_put_contents($filepath, $create))
-        {
+        if (file_put_contents($filepath, $create) === false) {
             throw new \Exception('failed to write file: ' . $name, 500);
         }
     }
 
     public function file2sql($name)
+    {
+        throw new \Exception('not allowed');
+    }
+
+    public function markAsRemoved($name)
+    {
+        $filepath = $this->dir . '/' . $name . '.sql';
+        if (file_exists($filepath)) {
+            unlink($filepath);
+        }
+        if (file_put_contents($filepath, self::REMOVED_FILE_CONTENT) === false) {
+            throw new \Exception('failed to write file: ' . $name, 500);
+        }
+    }
+
+    public function drop($name)
     {
         throw new \Exception('not allowed');
     }
@@ -617,126 +633,126 @@ class DbSchemaBase
 		return $ret;
 	}
 
-	public static function parseDeclares($body)
-	{
-		$ret = ['member'  => [],
-				'error'   => [],
-				'const'   => [],
-                'unknown' => [],
-                'handler' => [],];
-		$body = self::removeComments($body);
-		$body = trim(str_replace("\t", " ", $body));
+    public static function parseDeclares($body)
+    {
+        $ret = [
+            'member'  => [],
+            'error'   => [],
+            'const'   => [],
+            'unknown' => [],
+            'handler' => [],
+        ];
+        $body = self::removeComments($body);
+        $body = trim(str_replace("\t", " ", $body));
 
-		if (empty($body))
-		{
-			return $ret;
-		}
+        if (empty($body)) {
+            return $ret;
+        }
 
-		$decl['error'] = [];
-		$decl['const'] = [];
+        $decl['error'] = [];
+        $decl['const'] = [];
 
-		$tdec = self::getBetween($body, 'DECLARE', ';');
+        $tdec = self::getBetween($body, 'DECLARE', ';');
 
-		$bErrorWarning = false;
-		foreach ($tdec as $dec)
-		{
-			$p = [];
-			$dec = str_replace('`','',$dec);
-			$dec = trim($dec);
-            if (strtoupper(substr($dec, 0, 8) == 'CONTINUE'))
-            {
+        foreach ($tdec as $pos => $dec) {
+            $p = [];
+            $dec = str_replace('`', '', $dec);
+            $dec = trim($dec);
+            if (strtoupper(substr($dec, 0, 8) == 'CONTINUE')) {
                 //ignore
             }
-			else if (substr($dec, 0, 2) == 'm_')
-			{
-				$p = self::splitDeclare($dec);
-				$ret['member'][] = $p;
-			}
-			elseif (substr($dec, 0, 7) == 'eError_')
-			{
-				$p = DbCheckValues::checkError(self::splitDeclare($dec));
-				$ret['error'][] = $p;
-				if(isset($p['warning']) && !empty($p['warning'])) {
-					$bErrorWarning=true;
-				}
-				$decl['error'][]=$p['name'];
-			}
-			elseif (substr($dec, 0, 7) == 'cConst_')
-			{
-				$p = DbCheckValues::checkConst(self::splitDeclare($dec));
-				$ret['const'][] = $p;
-				if(isset($p['warning']) && !empty($p['warning'])) {
-					$bErrorWarning=true;
-					$ret['warnings'][] = 'DECLARE Const Warning: "'.$p['warning'].'"';
-				}
-				$decl['const'][]=$p['name'];
-			}
-			else
-			{
-			    $h = self::checkHandler($dec);
-			    if(!empty($h)) {
+            else if (substr($dec, 0, 2) == 'm_') {
+                $p = self::splitDeclare($dec);
+                $ret['member'][] = $p;
+                if (!self::inBody($body, $p['name'], $pos)) {
+                    $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: unused';
+                }
+            }
+            else if (substr($dec, 0, 7) == 'eError_') {
+                $p = DbCheckValues::checkError(self::splitDeclare($dec));
+                $ret['error'][] = $p;
+                $decl['error'][] = $p['name'];
+                if (isset($p['warnings']) && !empty($p['warnings'])) {
+                    foreach ($p['warnings'] as $w) {
+                        $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: ' . $w;
+                    }
+                }
+                if (!self::inBody($body, $p['name'], $pos)) {
+                    $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: unused';
+                }
+            }
+            else if (substr($dec, 0, 7) == 'cConst_') {
+                $p = DbCheckValues::checkConst(self::splitDeclare($dec));
+                $ret['const'][] = $p;
+                $decl['const'][] = $p['name'];
+                if (isset($p['warnings']) && !empty($p['warnings'])) {
+                    foreach ($p['warnings'] as $w) {
+                        $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: ' . $w;
+                    }
+                }
+                if (!self::inBody($body, $p['name'], $pos)) {
+                    $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: unused';
+                }
+            }
+            else {
+                $h = self::checkHandler($dec);
+                if (!empty($h)) {
                     $ret['handler'][] = $h;
-                } else {
+                }
+                else {
                     $p = self::splitDeclare($dec);
                     $ret['unknown'][] = $p;
-                    $ret['warnings'][] = 'Unknown DECLARE !: "'.$dec.'"';
-                    $bErrorWarning=true;
+                    $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: "' . $dec . '"';
+                    if (!self::inBody($body, $p['name'], $pos)) {
+                        $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: unused';
+                    }
                 }
-			}
-		}
-		if ($bErrorWarning)
-		{
-            $ret['warnings'][] = 'one or more declares have warnings';
-		}
+            }
+        }
 
-		//find used errors and const
-		foreach (DbValues::Keys['error'] as $find)
-		{
-			if(in_array($find,$decl['error'])) continue;
-			$pos=0;
-			while ($pos = strpos($body, $find, $pos))
-			{
-				$pos += strlen($find);
-				$nextchar = substr($body, $pos, 1);
-				$pos += 1;
-				if ($nextchar == ' ' || $nextchar == '(' || $nextchar == '`' || $nextchar == '\'' || $nextchar == '"' || $nextchar == "\n" || $nextchar == "\r" || $nextchar == "\t" || $nextchar == "," || $nextchar == ";" || $nextchar == "=")
-				{
-					$ret['warnings'][] = 'error used but not declared: '.$find;
-					break;
-				} else {
-					/*var_dump($find);
-					var_dump($pos);
-					var_dump($nextchar);
-					var_dump(substr($body,$pos-strlen($find)));
-					die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);*/
-				}
-			}
-		}
-		foreach (DbValues::Keys['const'] as $find)
-		{
-			if(in_array($find,$decl['const'])) continue;
-			$pos=0;
-			while ($pos = strpos($body, $find, $pos))
-			{
-				$pos += strlen($find);
-				$nextchar = substr($body, $pos, 1);
-				$pos += 1;
-				if ($nextchar == ' ' || $nextchar == '(' || $nextchar == '`' || $nextchar == '\'' || $nextchar == '"' || $nextchar == "\n" || $nextchar == "\r" || $nextchar == "\t" || $nextchar == "," || $nextchar == ";" || $nextchar == "=")
-				{
-					$ret['warnings'][] = 'const used but not declared: '.$find;
-					break;
-				} else {
-					/*var_dump($find);
-					var_dump($pos);
-					var_dump($nextchar);
-					var_dump(substr($body,$pos-strlen($find)));
-					die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);*/
-				}
-			}
-		}
+        //find undeclared values
+        {
+            foreach (DbValues::Keys['error'] as $find) {
+                if (in_array($find, $decl['error'])) {
+                    continue;
+                }
+                if (self::inBody($body, $find)) {
+                    $ret['warnings'][] = 'DECLARE [ ' . $find . ' ]: not declared';
+                }
+            }
+
+            foreach (DbValues::Keys['const'] as $find) {
+                if (in_array($find, $decl['const'])) {
+                    continue;
+                }
+                if (self::inBody($body, $find)) {
+                    $ret['warnings'][] = 'DECLARE [ ' . $find . ' ]: not declared';
+                }
+            }
+        }
 
 		return $ret;
 	}
+
+    private static function inBody(string $body, string $find, int $startPos = 0): bool
+    {
+        if(empty($body) || empty($find)) return false;
+        $arrPrevchar = [' ', '(', ')', '`', '\'', '"', '.', ',', ';', '=', "\n", "\r", "\t"];
+        $arrNextchar = [' ', '(', ')', '`', '\'', '"', '.', ',', ';', '=', "\n", "\r", "\t"];
+        $pos = $startPos;
+
+        while ($pos < strlen($body) && $pos = strpos($body, $find, $pos)) {
+            $prevchar = substr($body, $pos-1, 1);
+            $pos += strlen($find);
+            $nextchar = substr($body, $pos, 1);
+            $pos += 1;
+            if(in_array($prevchar,$arrPrevchar) && in_array($nextchar,$arrNextchar)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 	public static function findUsesFor($body, $name, $search4uses)
 	{
@@ -753,23 +769,14 @@ class DbSchemaBase
 			{
 				continue;
 			}
-			$pos = 0;
-			while ($pos = strpos($body, $find, $pos))
-			{
-				$pos += strlen($find);
-				$nextchar = substr($body, $pos, 1);
-				$pos += 1;
-				if ($nextchar == ' ' || $nextchar == '(' || $nextchar == '`' || $nextchar == '\'' || $nextchar == '"' || $nextchar == "\n" || $nextchar == "\r" || $nextchar == "\t" || $nextchar == ";")
-				{
-					$ret[$type][] = $find;
-					break;
-				}
-			}
+			if(self::inBody($body, $find)) {
+                $ret[$type][] = $find;
+            }
 		}
 
 		return $ret;
 	}
-
+/*
 	public static function getBetween($content, $start, $end)
 	{
 		if (empty($content))
@@ -795,6 +802,28 @@ class DbSchemaBase
 			return [];
 		}
 	}
+*/
+    public static function getBetween($str, $startDelimiter, $endDelimiter) {
+        if (empty($str) || empty($startDelimiter) || empty($endDelimiter))
+        {
+            return [];
+        }
+        $contents = [];
+        $startDelimiterLength = strlen($startDelimiter);
+        $endDelimiterLength = strlen($endDelimiter);
+        $startFrom = $contentStart = $contentEnd = 0;
+        while (false !== ($contentStart = strpos($str, $startDelimiter, $startFrom))) {
+            $contentStart += $startDelimiterLength;
+            $contentEnd = strpos($str, $endDelimiter, $contentStart);
+            if (false === $contentEnd) {
+                break;
+            }
+            $contents[$contentEnd + $endDelimiterLength] = substr($str, $contentStart, $contentEnd - $contentStart);
+            $startFrom = $contentEnd + $endDelimiterLength;
+        }
+
+        return $contents;
+    }
 
     public static function mergeData($data)
     {

@@ -135,4 +135,10 @@ class DbSchemaTriggers extends DbSchemaBase
 
         return $this->executeSql($data);
     }
+
+    public function drop($name)
+    {
+        $sql = 'DROP TRIGGER /*!50032 IF EXISTS */ `'.$name.'`';
+        return $this->executeSql($sql);
+    }
 }

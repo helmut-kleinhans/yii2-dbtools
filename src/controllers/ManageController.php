@@ -111,6 +111,33 @@ class ManageController extends Controller {
         $c->file2sql($name);
     }
 
+    public function actionMarkAsRemoved()
+    {
+        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
+        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
+        if (empty($group) || empty($name))
+        {
+            throw new \Exception('Empty param', 500);
+        }
+
+        $c = $this->group2class($group);
+        $c->markAsRemoved($name);
+    }
+
+    public function actionDrop()
+    {
+        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
+        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
+        if (empty($group) || empty($name))
+        {
+            throw new \Exception('Empty param', 500);
+        }
+
+        $c = $this->group2class($group);
+        $c->drop($name);
+        $c->markAsRemoved($name);
+    }
+
     private function group2class(string $group) : DbSchemaBase
     {
         switch ($group)

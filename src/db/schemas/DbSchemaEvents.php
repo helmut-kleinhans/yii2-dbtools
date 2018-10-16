@@ -106,4 +106,10 @@ class DbSchemaEvents extends DbSchemaBase
 
         return $this->executeSql($data);
     }
+
+    public function drop($name)
+    {
+        $sql = 'DROP EVENT /*!50032 IF EXISTS */ `'.$name.'`';
+        return $this->executeSql($sql);
+    }
 }

@@ -227,4 +227,10 @@ class DbSchemaTables extends DbSchemaBase
 
         return $ret;
     }
+
+    public function drop($name)
+    {
+        $sql = 'DROP TABLE IF EXISTS `'.$name.'`';
+        return $this->executeSql($sql);
+    }
 }

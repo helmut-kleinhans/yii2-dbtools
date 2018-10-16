@@ -37,49 +37,44 @@ class DbCheckValues extends DbValues {
 			return false;
 		}
 	}
-	public static function checkError($p)
-	{
-		$name=$p['name'];
-		$type=$p['type'];
-		$v=$p['value'];
-		$p['message'] = '';
-		$wmsg=[];
+    public static function checkError($p)
+    {
+        $name=$p['name'];
+        $type=$p['type'];
+        $v=$p['value'];
+        $p['message'] = '';
+        $wmsg=[];
 
-		if ($type != DbGenValues::cErrorDbType)
-		{
-			$wmsg[] = 'type needs to be '.DbGenValues::cErrorDbType.'!';
-		}
 
-		if (version_compare(PHP_VERSION, '7.0.0') < 0)
-		{
-			$wmsg[] = 'need php > 7.0.0';
-		}
-		else
-		{
-			$ec = self::getError($name);
-			if ($ec === false)
-			{
-				$wmsg[] = 'not defined: ' . $name;
-			}
-			elseif ($ec != $v)
-			{
-				$wmsg[] = 'error code missmatch!: ' . $name . ' - is ' . $v . ' but should be ' . $ec;
-			}
-			else
-			{
-				$p['message'] = static::MessageByCode($v);
-			}
-		}
+        $ec = self::getError($name);
+        if ($ec === false)
+        {
+            $wmsg[] = 'not defined';
+        }
+        elseif ($ec != $v)
+        {
+            $wmsg[] = 'value missmatch: is "' . $v . '"" but should be "' . $ec.'"';
+        }
+        else
+        {
+            $p['message'] = static::MessageByCode($v);
+        }
 
-		if ($v >= DbGenValues::iMaxErrorValue)
-		{
-			$wmsg[] = 'errorcode(' . $v . ') is exceeds limit of ' . DbGenValues::iMaxErrorValue . '"!';
-		}
+        if ($type != DbGenValues::cErrorDbType)
+        {
+            $wmsg[] = 'type missmatch: - is "' . $type . '" but should be "' . DbGenValues::cErrorDbType . '"';
+        }
 
-		$p['warning'] = trim(implode('<br/>', $wmsg));
+        if ($v >= DbGenValues::iMaxErrorValue)
+        {
+            $wmsg[] = 'errorcode(' . $v . ') is exceeds limit of ' . DbGenValues::iMaxErrorValue . '"!';
+        }
 
-		return $p;
-	}
+        $p['warnings'] = $wmsg;
+
+        return $p;
+    }
+
 	public static function checkConst($p)
 	{
 		$name=$p['name'];
@@ -87,28 +82,24 @@ class DbCheckValues extends DbValues {
 		$v=$p['value'];
 		$wmsg=[];
 
-		if (version_compare(PHP_VERSION, '7.0.0') < 0)
-		{
-			$wmsg[] = 'need php > 7.0.0';
-		}
-		else
-		{
-			$ec = self::getConst($name);
-			if ($ec === false)
-			{
-				$wmsg[] = 'not defined: ' . $name;
-			}
-			elseif ($ec != $v && "'".$ec."'" != $v)
-			{
-				$wmsg[] = 'error code missmatch!: ' . $name . ' - is ' . $v . ' but should be ' . $ec;
-			}
-			elseif(static::DbTypes[$name] != $type)
-			{
-				$wmsg[] = 'error type missmatch!: ' . $name . ' - is "' . $type . '"" but should be "' . static::DbTypes[$name] . '"';
-			}
-		}
+        $ec = self::getConst($name);
+        if ($ec === false)
+        {
+            $wmsg[] = 'not defined';
+        }
+        else {
+            if ($ec != $v && "'".$ec."'" != $v)
+            {
+                $wmsg[] = 'value missmatch: is "' . $v . '" but should be "' . $ec.'"';
+            }
 
-		$p['warning'] = trim(implode('<br/>', $wmsg));
+            if(static::DbTypes[$name] != $type)
+            {
+                $wmsg[] = 'type missmatch: - is "' . $type . '" but should be "' . static::DbTypes[$name] . '"';
+            }
+        }
+
+        $p['warnings'] = $wmsg;
 
 		return $p;
 	}

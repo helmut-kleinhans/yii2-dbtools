@@ -88,4 +88,10 @@ class DbSchemaViews extends DbSchemaTables
 
         return $this->executeSql($data);
     }
+
+    public function drop($name)
+    {
+        $sql = 'DROP VIEW /*!50032 IF EXISTS */ `'.$name.'`';
+        return $this->executeSql($sql);
+    }
 }
