@@ -13,6 +13,8 @@ $statusmap = [
     'removed' =>'default',
 ];
 
+$specialFlags=['unused','noflags'];
+
 $jsonDataTable = [];
 
 if(isset($data['data'])) {
@@ -73,12 +75,37 @@ if(isset($data['data'])) {
     <div class="col-md-3">
         <fieldset id="templates">
             <div class="col">
-                <?php
-                foreach ($statusmap as $status=>$style)
-                {
-                    echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_'.$status,$status,$style,false,'updateItemTable()');
-                }
-                ?>
+                <button href="#panel_filters" class="btn btn-info" data-toggle="collapse">Filters</button>
+
+                <div class="panel-group collapse" id="panel_filters">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">Status</div>
+                        <div class="panel-body">
+                            <?php
+                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_status_', $(this).prop('checked') );") . '<br>';
+                            foreach ($statusmap as $status => $style) {
+                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_' . $status, $status, $style, false, 'updateItemTable()');
+                            }
+                            ?>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">Flags</div>
+                        <div class="panel-body">
+                            <?php
+                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_default_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_flags_default_', $(this).prop('checked') );cbSetAllChecked('cb_filter_flags_special_',false);") . '<br>';
+                            foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
+                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_default_' . $name, $name, 'default', false, 'onclickFlagsDefault($(this))');
+                            }
+                            echo '<br>';
+                            foreach ($specialFlags as $name) {
+                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_special_' . $name, $name, 'warning', false, 'onclickFlagsSpecial($(this))');
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col">
                 <table id="itemtable" class="display compact" width="100%" cellspacing="0"></table>
@@ -150,12 +177,22 @@ $cbSave='';
 
 foreach ($statusmap as $status=>$style)
 {
-    $cbLoad.='$("#cb_filter_'.$status.'").prop("checked", settingsLoadBool("filter.'.$status.'", true));';
-    $cbSave.='settingsSave("filter.'.$status.'", $("#cb_filter_'.$status.'").prop("checked"));';
+    $cbLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_status_' . $status);
+    $cbSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_status_' . $status);
+}
+
+foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
+    $cbLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_flags_default_' . $name);
+    $cbSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_flags_default_' . $name);
 }
 
 $customer = isset($_REQUEST['customer']) ? $_REQUEST['customer'] : '';
 
+$checkFlagsDefault = [];
+foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
+    $checkFlagsDefault[]="if( $('#cb_filter_flags_default_$name').prop(\"checked\")){fd=true; hd = (hd || value['$name'] == 1)}";
+}
+$checkFlagsDefault='var fd=false;hd=false; '.implode("\n",$checkFlagsDefault).' return !fd || hd;';
 $this->registerJs(<<<JS
     var table = null;
     var dataTable = $jsonDataTable;
@@ -168,14 +205,54 @@ $this->registerJs(<<<JS
     var colStatus = 2;
     var colName = 3;
 
+    function checkSpecialFlagsUnused(value) { 
+        return !value['export'] && !value['select'] && !value['usedBy'] && !value['devel'] && !value['legacy']
+        return false;
+    }
+    function checkSpecialFlagsNoFlags(value) {      
+        return value.length == 0;
+    }
+    function checkFlags(rowData) {
+        var value = rowData.flags;
+        
+        if($('#cb_filter_flags_special_unused').prop("checked")) return checkSpecialFlagsUnused(value);
+        if($('#cb_filter_flags_special_noflags').prop("checked")) return checkSpecialFlagsNoFlags(value);
+                
+        $checkFlagsDefault;
+    }
+    
     /* Custom filtering function which will search data in column four between two values */
     $.fn.dataTable.ext.search.push(
         function( settings, searchData, index, rowData, counter ) {
-            if(!$('#cb_filter_'+rowData.status).prop("checked")) return false;
+            if(!$('#cb_filter_status_'+rowData.status).prop("checked")) return false;
+            if (!checkFlags(rowData)) return false;
             return true;
         }
     );
 
+    function onclickFlagsDefault(obj) {
+        if(obj.prop("checked")) {
+            cbSetAllChecked('cb_filter_flags_special_',false);
+        }
+        updateItemTable();
+    }
+
+    function onclickFlagsSpecial(obj) {
+        if(obj.prop("checked")) {
+            cbSetAllChecked('cb_filter_flags_default_', false);
+            cbSetAllChecked('cb_filter_flags_special_',false);
+            obj.prop("checked",true);
+        }
+        updateItemTable();
+    }
+    
+    function cbSetAllChecked(id,checked) {
+        $('[id^='+id+']').each(function( index ) {
+            $(this).prop("checked", checked);
+        });
+        updateItemTable();
+    }
+    
     function initItemTable() {
 
         table = $('#itemtable').DataTable( {

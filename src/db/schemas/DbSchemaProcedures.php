@@ -53,81 +53,80 @@ class DbSchemaProcedures extends DbSchemaBase
 		return $sql;
 	}
 
-	protected function _doInfo($data)
-	{
-		if (!isset($data['helper']))
-		{
-			return [];
-		}
-		$helper = $data['helper'];
-		$brief = self::parseBrief($data['body'], $data['params'], $this->doFormat);
+    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+	    if(isset($data['helper'])) {
+            if ($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
+                $ret['warnings'][] = 'DEFINER needs to be "' . DbToolsModule::getInstance()->checkDefiner . '"';
+            }
 
-        $select=[];
-        if (isset($brief['select'])) {
-            $select = $brief['select'];
-            unset($brief['select']);
+            if ($data['helper']['SECURITY_TYPE'] != 'INVOKER') {
+                $ret['warnings'][] = 'SECURITY TYPE needs to be "INVOKER"';
+            }
+
+            $orgparams = $data['params'];
+            $param = $brief['param'];
+            unset($brief['param']);
+
+            if (!empty($orgparams) && $this->doFormat) {
+                #first word is the parameter name, rest is comment
+                $pbriefparams = [];
+                if (!empty($param)) {
+                    foreach ($param as $bdata) {
+                        if (empty($bdata)) {
+                            continue;
+                        }
+                        $line = $bdata[0];
+                        $name = trim(substr($line, 0, strpos($line, ' ')));
+                        if (empty($name)) {
+                            $name = trim($line);
+                            unset($bdata[0]);
+                        }
+                        else {
+                            $bdata[0] = trim(substr($line, strlen($name) + 1));
+                        }
+                        $pbriefparams[$name] = implode('<br/>', $bdata);
+                    }
+                }
+
+                $pret = '<h4>Params</h4>
+<table class="table table-sm">
+    <thead class="thead-default">
+        <tr><th>InOut</th><th>Name</th><th>Type</th><th>Description</th><th>Warning</th></tr>
+    </thead>
+    <tbody class="tbody">
+';
+                $retparam = [];
+                foreach ($orgparams as $ppos => $pdata) {
+                    if ($ppos == 0) {
+                        $retparam = $pdata;
+                        continue;
+                    }
+                    $name = $pdata['PARAMETER_NAME'];
+                    $pdesc = '';
+                    if (isset($pbriefparams[$name]) && !empty($pbriefparams[$name])) {
+                        $pdesc = $pbriefparams[$name];
+                    }
+                    $pret .= '
+    <tr>
+        <td><span class="label label-' . (stripos($pdata['PARAMETER_MODE'], 'in') !== false ? 'primary' : 'default') . '">&nbsp;IN&nbsp;</span><span class="label label-' . (stripos($pdata['PARAMETER_MODE'], 'out') !== false ? 'success' : 'default') . '">&nbsp;OUT&nbsp;</span></td>
+        <td>' . $name . '</td><td>' . strtoupper($pdata['DTD_IDENTIFIER']) . '</td><td>' . $pdesc . '</td><td>&nbsp;</td>
+    </tr>
+';
+                }
+                if (!empty($retparam)) {
+                    $pret .= '
+    <tr>
+        <td><span class="label label-danger">&nbsp;RETURN&nbsp;</span></td>
+        <td>&nbsp;</td><td>' . strtoupper($retparam['DTD_IDENTIFIER']) . '</td><td>' . ((!empty($return)) ? $return : '') . '</td><td>&nbsp;</td>
+    </tr>
+';
+                }
+                $pret .= '
+</tbody>
+</table>';
+                $brief['additionalInfo'][] = $pret;
+            }
         }
-
-        $export=!empty($select);
-        if (isset($brief['export']))
-        {
-            $export = true;
-            unset($brief['export']);
-        }
-
-		$warnings = [];
-		if (isset($brief['warnings']))
-		{
-			$warnings = $brief['warnings'];
-			unset($brief['warnings']);
-		}
-
-		$declares = self::parseDeclares($data['body']);
-		if (isset($declares['warnings']))
-		{
-			$warnings = yii\helpers\ArrayHelper::merge($warnings, $declares['warnings']);
-			unset($declares['warnings']);
-		}
-
-        $head = self::parseHead($data['body'],$helper);
-        if (isset($head['warnings']))
-        {
-            $warnings = yii\helpers\ArrayHelper::merge($warnings, $head['warnings']);
-            unset($head['warnings']);
-        }
-
-		if (empty($brief) || !isset($brief['info']) || empty($brief['info']))
-		{
-			$brief['info'] = $helper['ROUTINE_COMMENT'];
-		}
-
-		$info = $brief['info'];
-        unset($brief['info']);
-
-		if(!empty($brief))
-        {
-            throw new \Exception('forgot to process: brief:' . print_r($brief,true).' data:'.print_r($data,true));
-        }
-
-		return ['text'     => $info,
-				'declares' => $declares,
-				'select' => $select,
-                'warnings' => $warnings,
-                'export' => $export,];
-	}
-
-    public static function parseHead($body,$data)
-    {
-        $ret = [];
-        if($data['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
-            $ret['warnings'][] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
-        }
-
-        if($data['SECURITY_TYPE'] != 'INVOKER') {
-            $ret['warnings'][] = 'SECURITY TYPE needs to be "INVOKER"';
-        }
-
-        return $ret;
     }
 
     public function drop($name)

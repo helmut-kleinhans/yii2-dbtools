@@ -51,27 +51,20 @@ class DbSchemaViews extends DbSchemaTables
         return $sql;
 	}
 
-    protected function _doInfo($data)
-    {
-        if (!isset($data['helper']))
-        {
-            return [];
+    protected function getBriefContent(array $data): string {
+        return '';
+    }
+
+    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+	    if(isset($data['helper'])) {
+            if ($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
+                $ret['warnings'][] = 'DEFINER needs to be "' . DbToolsModule::getInstance()->checkDefiner . '"';
+            }
+
+            if ($data['helper']['SECURITY_TYPE'] != 'INVOKER') {
+                $ret['warnings'][] = 'SECURITY TYPE needs to be "INVOKER"';
+            }
         }
-
-        $warnings = [];
-
-        if($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
-            $warnings[] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
-        }
-
-        if($data['helper']['SECURITY_TYPE'] != 'INVOKER') {
-            $warnings[] = 'SECURITY TYPE needs to be "INVOKER"';
-        }
-
-        $info = '';
-
-        return ['text'     => $info,
-                'warnings' => $warnings,];
     }
 
     public function drop($name)

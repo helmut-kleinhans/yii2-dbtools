@@ -52,44 +52,10 @@ class DbSchemaEvents extends DbSchemaBase
 		return $sql;
 	}
 
-    protected function _doInfo($data)
-    {
-        if (!isset($data['helper']))
-        {
-            return [];
-        }
-        $brief = self::parseBrief($data['body'], [], $this->doFormat);
-        if (isset($brief['select']))
-        {
-            unset($brief['select']);
-        }
-        $warnings = [];
-        if (isset($brief['warnings']))
-        {
-            $warnings = $brief['warnings'];
-            unset($brief['warnings']);
-        }
-        $declares = self::parseDeclares($data['body']);
-        if (isset($declares['warnings']))
-        {
-            $warnings = yii\helpers\ArrayHelper::merge($warnings, $declares['warnings']);
-            unset($declares['warnings']);
-        }
-
+    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
         if($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
-            $warnings[] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
+            $ret['warnings'][] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
         }
-
-        $info = '';
-
-        if (!empty($brief) && isset($brief['brief']) && !empty($brief['brief']))
-        {
-            $info .= implode('<br/>', $brief);
-        }
-
-        return ['text'     => $info,
-                'declares' => $declares,
-                'warnings' => $warnings,];
     }
 
     public function drop($name)

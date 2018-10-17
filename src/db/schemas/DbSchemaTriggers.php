@@ -75,51 +75,28 @@ class DbSchemaTriggers extends DbSchemaBase
 		return $result;
 	}
 
-	protected function _doInfo($data)
-	{
-		if (!isset($data['helper']))
-		{
-			return [];
-		}
-		$brief = self::parseBrief($data['body'], [], $this->doFormat);
-		if (isset($brief['select']))
-		{
-			unset($brief['select']);
-		}
-		$warnings = [];
-		if (isset($brief['warnings']))
-		{
-			$warnings = $brief['warnings'];
-			unset($brief['warnings']);
-		}
-		$declares = self::parseDeclares($data['body']);
-		if (isset($declares['warnings']))
-		{
-			$warnings = yii\helpers\ArrayHelper::merge($warnings, $declares['warnings']);
-			unset($declares['warnings']);
-		}
+    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret)
+    {
+        if(isset($data['helper'])) {
+            if ($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
+                $ret['warnings'][] = 'DEFINER needs to be "' . DbToolsModule::getInstance()->checkDefiner . '"';
+            }
 
-        if($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
-            $warnings[] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
-        }
+            if ($this->doFormat) {
 
-        $info = '<h4>Trigger</h4><table class="table table-sm">
- <thead class="thead-default">
- <tr><th>Event</th><th>Action</th><th>On</th></tr>
- </thead>
- <tbody class="tbody">
- <tr><td>' . $data['helper']['EVENT_MANIPULATION'] . '</td><td>' . $data['helper']['ACTION_TIMING'] . '</td><td>' . self::getLink($this->dbName, DbSchemaTables::cType, $data['helper']['EVENT_OBJECT_TABLE']) . '</td></tr>
- </tbody>
+                $brief['additionalInfo'][] = '
+<h4>Trigger</h4>
+<table class="table table-sm">
+     <thead class="thead-default">
+        <tr><th>Event</th><th>Action</th><th>On</th></tr>
+    </thead>
+    <tbody class="tbody">
+        <tr><td>' . $data['helper']['EVENT_MANIPULATION'] . '</td><td>' . $data['helper']['ACTION_TIMING'] . '</td><td>' . self::getLink($this->dbName, DbSchemaTables::cType, $data['helper']['EVENT_OBJECT_TABLE']) . '</td></tr>
+    </tbody>
  </table>';
-		if (!empty($brief) && isset($brief['brief']) && !empty($brief['brief']))
-		{
-			$info .= implode('<br/>', $brief);
-		}
-
-		return ['text'     => $info,
-				'declares' => $declares,
-				'warnings' => $warnings,];
-	}
+            }
+        }
+    }
 
     public function drop($name)
     {

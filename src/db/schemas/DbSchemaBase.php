@@ -11,6 +11,26 @@ class DbSchemaBase
 {
     const REMOVED_FILE_CONTENT = '--REMOVED--';
 
+    const FLAGS_DEPRECATED = 'deprecated';
+    const FLAGS_LEGACY = 'legacy';
+    const FLAGS_DEVEL = 'devel';
+    const FLAGS_TODO = 'todo';
+    const FLAGS_EXPORT = 'export';
+    const FLAGS_SELECT = 'select';
+    const FLAGS_USEDBY = 'usedBy';
+    const FLAGS_CONSTANT = 'constant';
+
+    const FLAGS_ALL = [
+        self::FLAGS_DEPRECATED,
+        self::FLAGS_LEGACY,
+        self::FLAGS_DEVEL,
+        self::FLAGS_TODO,
+        self::FLAGS_EXPORT,
+        self::FLAGS_SELECT,
+        self::FLAGS_USEDBY,
+        self::FLAGS_CONSTANT,
+    ];
+
 	public $dbName;
 	public $db;
 	public $dir;
@@ -93,6 +113,10 @@ class DbSchemaBase
 		throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
 	}
 
+    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+        throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
+    }
+
 	public function buildInfo($data)
 	{
 		$ret = $data;
@@ -117,10 +141,140 @@ class DbSchemaBase
 		return $ret;
 	}
 
-	protected function _doInfo($data)
-	{
-		return $data;
-	}
+    protected function getBriefContent(array $data): string {
+        return isset($data['body']) ? $data['body'] : '';
+    }
+
+    protected function getDeclaresContent(array $data): string {
+        return $this->getBriefContent($data);
+    }
+
+    protected function _doInfo($data)
+    {
+        $ret = [
+            'text'     => [],
+            'declares' => [],
+            'select'   => [],
+            'warnings' => [],
+            'export'   => [],
+            'flags'    => [],
+        ];
+
+        $brief = self::parseBrief($this->getBriefContent($data));
+        $declares = self::parseDeclares($this->getDeclaresContent($data));
+
+        $ret['select'] = $brief['select'];
+        unset($brief['select']);
+
+        $warnings = yii\helpers\ArrayHelper::merge($brief['warnings'], $declares['warnings']);
+        unset($brief['warnings']);
+        unset($declares['warnings']);
+        $ret['warnings'] = $warnings;
+        $ret['declares'] = $declares;
+
+        $ret['export'] = $brief['export'];
+        unset($brief['export']);
+
+        $ret['flags'] = $brief['flags'];
+        unset($brief['flags']);
+
+        $this->_doAdditionalInfo($data, $brief, $ret);
+
+        if (isset($brief['param'])) {
+            unset($brief['param']);
+        }
+        $additionalInfo=[];
+        if (isset($brief['additionalInfo'])) {
+            $additionalInfo=$brief['additionalInfo'];
+            unset($brief['additionalInfo']);
+        }
+
+        $info=$brief['info'];
+        unset($brief['info']);
+
+        if(!empty($brief))
+        {
+            throw new \Exception('forgot to process: brief:' . print_r($brief,true).' data:'.print_r($data,true));
+        }
+
+        #do html formating
+        if($this->doFormat) {
+
+            $text=[];
+
+            if (!empty($info[$key = 'deprecated'])) {
+                $text[] = '
+<h4>Deprecated</h4>
+<div class="alert alert-warning">
+    <p>' . implode('<br>', $info[$key]) . '</p>
+</div>';
+            }
+
+            if (!empty($info[$key = 'legacy'])) {
+                $text[] = '
+<h4>Legacy</h4>
+<div class="alert alert-warning">
+    <p>' . implode('<br>', $info[$key]) . '</p>
+</div>';
+            }
+
+            if (!empty($info[$key = 'devel'])) {
+                $text[] = '
+<h4>In Development</h4>
+<div class="alert alert-warning">
+    <p>' . implode('<br>', $info[$key]) . '</p>
+</div>';
+            }
+
+            if (!empty($info[$key = 'todo'])) {
+                $text[] = '
+<h4>Todo</h4>
+<div class="alert alert-success">
+    <ul><li>' . implode('</li><li>', $info[$key]) . '</li></ul>
+</div>';
+            }
+
+            if (!empty($info[$key = 'brief'])) {
+                $text[] = '
+<h4>Brief</h4>
+<div class="alert alert-warning">
+    <p>' . implode('<br>', $info[$key]) . '</p>
+</div>';
+            }
+
+            if (!empty($info[$key = 'note'])) {
+                $text[] = '
+<h4>Note</h4>
+<div class="alert alert-info">
+    <ul><li>' . implode('</li><li>', $info[$key]) . '</li></ul>
+</div>';
+            }
+
+            if (!empty($info[$key = 'export'])) {
+                $text[] = '
+<h4>Export</h4>
+<div class="alert alert-info">
+    <p>' . implode('<br>', $info[$key]) . '</p>
+</div>';
+            }
+
+            if (!empty($info[$key = 'select'])) {
+                $text[] = '
+<h4>Select</h4>
+<div class="alert alert-info">
+    <ul><li>' . implode('</li><li>', $info[$key]) . '</li></ul>
+</div>';
+            }
+
+            foreach ($additionalInfo as $a) {
+                $text[] = $a;
+            }
+
+            $ret['text'] = implode('<br>',$text);
+        }
+
+        return $ret;
+    }
 
 	public function findUses($data, $search4uses)
 	{
@@ -156,6 +310,8 @@ class DbSchemaBase
             $uses = isset($value['merged']['uses'])?$value['merged']['uses']:[];
             $usedBy = isset($value['usedBy'])?$value['usedBy']:[];
             $selects = isset($value['merged']['select'])?$value['merged']['select']:[];
+            $flags = isset($value['parse']) && isset($value['parse']['flags']) ? $value['parse']['flags'] : [];
+
             if (!empty($selects))
             {
                 if (count($selects) != count($value['parse']['select']))
@@ -189,6 +345,7 @@ class DbSchemaBase
             {
                 $header = '';
                 $body = '';
+                $flags[self::FLAGS_USEDBY] = 1;
                 foreach ($usedBy as $ttype => $tval)
                 {
                     $header .= '<th>' . $ttype . '</th>';
@@ -244,7 +401,8 @@ class DbSchemaBase
 			$result[$name]['createdb'] = (isset($value['createdb']) ? $value['createdb'] : '');
 			$result[$name]['createfile'] = (isset($value['createfile']) ? $value['createfile'] : '');
 			$result[$name]['info'] = trim(implode('', $info));
-			$result[$name]['filepath'] = (isset($value['filepath']) ? $value['filepath'] : '');
+            $result[$name]['filepath'] = (isset($value['filepath']) ? $value['filepath'] : '');
+            $result[$name]['flags'] = $flags;
 			if (isset($value['warnings']) && !empty($value['warnings']))
 			{
 				$result[$name]['warnings'] = '<ul><li>' . implode('</li><li>', $value['warnings']) . '</li></ul>';
@@ -401,6 +559,12 @@ class DbSchemaBase
             '/todo'       => 'todo',
             '@deprecated' => 'deprecated',
             '/deprecated' => 'deprecated',
+            '@legacy' => 'legacy',
+            '/legacy' => 'legacy',
+            '@devel' => 'devel',
+            '/devel' => 'devel',
+            '@constant' => 'constant',
+            '/constant' => 'constant',
         ];
         $current = [];
         foreach ($infos as $row) {
@@ -449,9 +613,7 @@ class DbSchemaBase
             $pret .= implode("\n", $bdata);
         }
         unset($in[$key]);
-        if (empty($pret)) {
-            return true;
-        }
+
         $out[$key] = $pret;
         return true;
     }
@@ -472,174 +634,145 @@ class DbSchemaBase
             }
         }
         unset($in[$key]);
-        if (empty($pret)) {
-            return true;
-        }
+
         $out[$key] = $pret;
         return true;
     }
 
-	public static function parseBrief($body, $orgparams, $doFormat=true)
+    public static function parseBrief(string $content) : array
     {
-        $brief = [];
-        $out = [];
-        $param = [];
-        $return = '';
-        $data = self::getBetween($body, '/**', '*/');
-        if (!empty($data)) {
-            $in = self::brief2array(array_shift($data));
+        $ret = [
+            'info'     => [],
+            'param'     => [],
+            'select' => [],
+            'export' => [],
+            'warnings' => [],
+            'flags' => [],
+        ];
 
-            //----------------------------------------------------------------------------------------------
-            // To Text
-            //----------------------------------------------------------------------------------------------
-            if(self::brief2text($key='deprecated',$in,$brief))
-            {
-                if(empty($brief[$key])) {
-                    $brief[$key]='deprecated';
-                }
-                $out['warnings'][] = 'deprecated';
-                if($doFormat)$brief[$key]='<h4>Deprecated</h4><div class="alert alert-warning">' . str_replace("\n","</br>\n",$brief[$key]) . '</div>';
-            }
+        $data = self::getBetween($content, '/**', '*/');
+        if(empty($data)) return $ret;
 
-            if(self::brief2list($key='todo',$in,$brief)) {
-                if($doFormat && !empty($brief[$key])) $brief[$key]='<h4>Todo</h4><div class="alert alert-success"><ul><li>' . implode('</li><li>',$brief[$key]) . '</li></ul></div>';
-            }
+        $in = self::brief2array(array_shift($data));
 
-            if(self::brief2text($key='brief',$in,$brief))
-            {
-                if($doFormat && !empty($brief[$key])) $brief[$key]='<h4>Brief</h4><div>' . str_replace("\n","</br>\n",$brief[$key]) . '</div>';
-            }
+        $out=[];
 
-            if(self::brief2list($key='note',$in,$brief)) {
-                if($doFormat && !empty($brief[$key])) $brief[$key]='<h4>Note</h4><div class="alert alert-info"><ul><li>' . implode('</li><li>',$brief[$key]) . '</li></ul></div>';
-            }
-
-            $select=[];
-            //cache select and set auto export!
-            if (isset($in['select'])) {
-                $select = $in['select'];
-                if (!isset($in['export'])) {
-                    $in['export'][] = '';
-                }
-            }
-
-            if(self::brief2text($key='export',$in,$brief))
-            {
-                if(empty($brief[$key])) {
-                    $brief[$key]='export';
-                }
-
-                $out[$key]=$brief[$key];
-
-                if($doFormat)$brief[$key]='<h4>Export</h4><div>' . str_replace("\n","</br>\n",$brief[$key]) . '</div>';
-            }
-
-
-
-            if(self::brief2list($key='select',$in,$brief)) {
-                if($doFormat && !empty($brief[$key])) $brief[$key]='<h4>Select</h4><div class="alert alert-info"><ul><li>' . implode('</li><li>',$brief[$key]) . '</li></ul></div>';
-
-                $pret = [];
-                foreach ($select as $bdata) {
-                    $line = $bdata[0];
-                    $name = trim(substr($line, 0, strpos($line, ' ')));
-                    if (empty($name)) {
-                        $name = trim($line);
-                    }
-                    $pret[] = $name;
-                }
-                $out['select'] = $pret;
-            }
-
-            if (isset($in['param']) && !empty($in['param'])) {
-                //used later
-                $param = $in['param'];
-                unset($in['param']);
-            }
-
-            if(self::brief2text($key='return',$in,$out))
-            {
-                if($doFormat) {
-                    $return = str_replace("\n","</br>\n",$out[$key]);
-                }
-                else {
-                    $return = $out[$key];
-                }
-                unset($out[$key]);
-            }
-
-            if (isset($in['warnings']) && !empty($in['warnings'])) {
-                foreach ($in['warnings'] as $bdata) {
-                    if (empty($bdata)) {
-                        continue;
-                    }
-                    $out['warnings'][] = implode(' ', $bdata);
-                }
-                unset($in['warnings']);
-            }
-
-            if(!empty($in)) {
-                throw new \Exception("forgot to process:\nin:".print_r($in,true)."\nout:".print_r($out,true));
+        //----------------------------------------------------------------------------------------------
+        // To Text
+        //----------------------------------------------------------------------------------------------
+        if(self::brief2text($key='deprecated',$in,$out))
+        {
+            $ret['warnings'][] = 'deprecated';
+            $ret['flags'][self::FLAGS_DEPRECATED]=1;
+            if(empty($out[$key])) {
+                $ret['info'][$key][]='deprecated';
+            } else {
+                $ret['info'][$key][]=$out[$key];
             }
         }
 
-
-        if (!empty($orgparams) && $doFormat) {
-            $pret = '<h4>Params</h4>
-				<table class="table table-sm">
- <thead class="thead-default">
-  <tr><th>InOut</th><th>Name</th><th>Type</th><th>Description</th><th>Warning</th></tr>
- </thead>
- <tbody class="tbody">
-				';
-            $pbriefparams = [];
-            if (!empty($param)) {
-                foreach ($param as $bdata) {
-                    if (empty($bdata)) {
-                        continue;
-                    }
-                    $line = $bdata[0];
-                    $name = trim(substr($line, 0, strpos($line, ' ')));
-                    if (empty($name)) {
-                        $name = trim($line);
-                        unset($bdata[0]);
-                    }
-                    else {
-                        $bdata[0] = trim(substr($line, strlen($name) + 1));
-                    }
-                    $pbriefparams[$name] = implode('<br/>', $bdata);
-                }
+        if(self::brief2text($key='legacy',$in,$out))
+        {
+            $ret['flags'][self::FLAGS_LEGACY]=1;
+            if(empty($out[$key])) {
+                $ret['info'][$key][]='legacy';
+            } else {
+                $ret['info'][$key][]=$out[$key];
             }
-            $retparam = [];
-            foreach ($orgparams as $ppos => $pdata) {
-                if ($ppos == 0) {
-                    $retparam = $pdata;
+        }
+
+        if(self::brief2text($key='devel',$in,$out))
+        {
+            $ret['warnings'][] = 'devel';
+            $ret['flags'][self::FLAGS_DEVEL]=1;
+            if(empty($out[$key])) {
+                $ret['info'][$key][]='devel';
+            } else {
+                $ret['info'][$key][]=$out[$key];
+            }
+        }
+
+        if(self::brief2list($key='todo',$in,$out)) {
+            $ret['flags'][self::FLAGS_TODO]=1;
+            $ret['info'][$key]=$out[$key];
+        }
+
+        if(self::brief2text($key='brief',$in,$out))
+        {
+            $ret['info'][$key][]=$out[$key];
+        }
+
+        if(self::brief2list($key='note',$in,$out)) {
+            $ret['info'][$key]=$out[$key];
+        }
+
+        //cache select and set auto export!
+        if (isset($in['export'])) {
+            $ret['flags'][self::FLAGS_EXPORT]=1;
+            $ret['export'][] = 'export'; #todo maybe use export types like PHP, CPP
+        }
+
+        if (isset($in['select'])) {
+            $ret['flags'][self::FLAGS_SELECT]=1;
+            if (!isset($in['export'])) {
+                $in['export'][] = '';
+            }
+            foreach ($in['select'] as $bdata) {
+                $line = $bdata[0];
+                $name = trim(substr($line, 0, strpos($line, ' ')));
+                if (empty($name)) {
+                    $name = trim($line);
+                }
+                $ret['select'][] = $name;
+            }
+        }
+
+        if(self::brief2text($key='export',$in,$out))
+        {
+            if(empty($out[$key])) {
+                $out[$key]='export';
+            }
+
+            $ret['info'][$key][]=$out[$key];
+        }
+
+        if(self::brief2list($key='select',$in,$out)) {
+            $ret['info'][$key]=$out[$key];
+        }
+
+
+        if(self::brief2text($key='return',$in,$out))
+        {
+            $ret['info'][$key][]=$out[$key];
+        }
+
+        if (isset($in['param'])) {
+            $ret['param'] = $in['param'];
+            unset($in['param']);
+        }
+
+        if (isset($in['warnings']) && !empty($in['warnings'])) {
+            foreach ($in['warnings'] as $bdata) {
+                if (empty($bdata)) {
                     continue;
                 }
-                $name = $pdata['PARAMETER_NAME'];
-                $pdesc = '';
-                if (isset($pbriefparams[$name]) && !empty($pbriefparams[$name])) {
-                    $pdesc = $pbriefparams[$name];
-                }
-                $pret .= '<tr>
-				<td><span class="label label-' . (stripos($pdata['PARAMETER_MODE'], 'in') !== false ? 'primary' : 'default') . '">&nbsp;IN&nbsp;</span><span class="label label-' . (stripos($pdata['PARAMETER_MODE'], 'out') !== false ? 'success' : 'default') . '">&nbsp;OUT&nbsp;</span></td>
-				<td>' . $name . '</td><td>' . strtoupper($pdata['DTD_IDENTIFIER']) . '</td><td>' . $pdesc . '</td><td>&nbsp;</td></tr>';
+                $ret['warnings'][] = implode(' ', $bdata);
             }
-            if (!empty($retparam)) {
-                $pret .= '<tr>
-				<td><span class="label label-danger">&nbsp;RETURN&nbsp;</span></td>
-				<td>&nbsp;</td><td>' . strtoupper($retparam['DTD_IDENTIFIER']) . '</td><td>' . ((!empty($return)) ? $return : '') . '</td><td>&nbsp;</td></tr>';
-            }
-            $pret .= '
-     </tbody>
-   </table>';
-            $brief['param'] = $pret;
+            unset($in['warnings']);
         }
 
-        $out['info'] = (!empty($brief) && $doFormat)?implode("<br>\n",$brief):'';
+        //cache select and set auto export!
+        if (isset($in['constant'])) {
+            $ret['flags'][self::FLAGS_CONSTANT]=1;
+            unset($in['constant']);
+        }
 
-        return $out;
-	}
+        if(!empty($in)) {
+            throw new \Exception("forgot to process:\nin:".print_r($in,true)."\nret:".print_r($ret,true));
+        }
+
+        return $ret;
+    }
 
     public static function checkHandler($dec)
     {
@@ -715,7 +848,10 @@ class DbSchemaBase
             'const'   => [],
             'unknown' => [],
             'handler' => [],
+            'warnings' => [],
         ];
+        if(empty($body)) return $ret;
+
         $body = self::removeComments($body);
         $body = trim(str_replace("\t", " ", $body));
 

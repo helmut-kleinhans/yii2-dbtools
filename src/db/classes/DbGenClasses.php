@@ -62,10 +62,9 @@ class DbGenClasses
             }
 
             foreach ($adata as $aname => $data) {
-                if (!isset($data['parse']) || !isset($data['parse']['export']) || empty($data['parse']['export'])) {
-                    continue;
+                if(isset($data['parse']['flags'][DbSchemaBase::FLAGS_EXPORT]) || isset($data['parse']['flags'][DbSchemaBase::FLAGS_SELECT])) {
+                    $this->createClass($dbName, $aname, $type, $data);
                 }
-                $this->createClass($dbName, $aname, $type, $data);
             }
         }
     }
