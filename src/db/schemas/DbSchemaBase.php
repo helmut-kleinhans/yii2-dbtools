@@ -258,7 +258,7 @@ class DbSchemaBase
 		return $result;
 	}
 
-    public function sql2file($name)
+    public function sql2file($name): array
     {
         $create = $this->getCreate($name);
         if (!$create) {
@@ -268,22 +268,96 @@ class DbSchemaBase
         if (file_put_contents($filepath, $create) === false) {
             throw new \Exception('failed to write file: ' . $name, 500);
         }
+
+        return ['createdb'   => $create,
+                'createfile' => $create,
+                'status'     => 'ok',
+        ];
     }
 
-    public function file2sql($name)
-    {
-        throw new \Exception('not allowed');
-    }
-
-    public function markAsRemoved($name)
+    public function file2sql($name): array
     {
         $filepath = $this->dir . '/' . $name . '.sql';
-        if (file_exists($filepath)) {
-            unlink($filepath);
+
+        if(!file_exists($filepath)) {
+            throw new \Exception('file does not exist');
         }
-        if (file_put_contents($filepath, self::REMOVED_FILE_CONTENT) === false) {
+        $data = file_get_contents($filepath);
+        if(empty($data)) {
+            throw new \Exception('empty data');
+        }
+
+        $this->executeSql($data);
+
+        return ['createdb'   => $data,
+                'createfile' => $data,
+                'status'     => 'ok',
+        ];
+    }
+
+    public function markAsRemoved(string $name, bool $drop) : array
+    {
+        $hDb = '
+###############################################################################
+# DB
+###############################################################################
+';
+        $hFile = '
+###############################################################################
+# FILE
+###############################################################################
+';
+
+        $filepath = $this->dir . '/' . $name . '.sql';
+
+        $createDb = '';
+        $createFile='';
+        try {
+            $createDb = $this->getCreate($name);
+        } catch (\Throwable $e) {
+            $createDb = '';
+        }
+
+        if (file_exists($filepath)) {
+            $createFile = file_get_contents($filepath);
+            unlink($filepath);
+            //prev marked as removed --- grep old file content
+            if(self::isRemoved($createFile)) {
+                $filepos = strpos($createFile,$hFile);
+                if($filepos === false) {
+                    $createFile = ''; //can not parse old data
+                } else {
+                    $createFile = substr($createFile,$filepos+strlen($hFile));
+                }
+            }
+        }
+
+        $content = self::REMOVED_FILE_CONTENT;
+
+        if(!empty($createDb)) {
+            $content.= $hDb.$createDb;
+        }
+        if(!empty($createFile)) {
+            $content.= $hFile.$createFile;
+        }
+
+        if (file_put_contents($filepath, $content) === false) {
             throw new \Exception('failed to write file: ' . $name, 500);
         }
+
+        if($drop) {
+            $this->drop($name);
+        }
+
+        return ['createdb'   => '',
+                'createfile' => $content,
+                'status'     => 'removed',
+        ];
+    }
+
+    public static function isRemoved(string $content) : bool {
+	    if(empty($content)) return false;
+        return (substr($content,0,strlen(self::REMOVED_FILE_CONTENT)) == self::REMOVED_FILE_CONTENT);
     }
 
     public function drop($name)
@@ -412,8 +486,8 @@ class DbSchemaBase
         $param = [];
         $return = '';
         $data = self::getBetween($body, '/**', '*/');
-        if (!empty($data)) {
-            $in = self::brief2array(array_shift($data));
+        if (!empty($data) && isset($data[0])) {
+            $in = self::brief2array($data[0]);
 
             //----------------------------------------------------------------------------------------------
             // To Text

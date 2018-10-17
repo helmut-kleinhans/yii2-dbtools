@@ -74,21 +74,6 @@ class DbSchemaViews extends DbSchemaTables
                 'warnings' => $warnings,];
     }
 
-    public function file2sql($name)
-    {
-        $filepath = $this->dir . '/' . $name . '.sql';
-
-        if(!file_exists($filepath)) {
-            throw new \Exception('file does not exist');
-        }
-        $data = file_get_contents($filepath);
-        if(empty($data)) {
-            throw new \Exception('empty data');
-        }
-
-        return $this->executeSql($data);
-    }
-
     public function drop($name)
     {
         $sql = 'DROP VIEW /*!50032 IF EXISTS */ `'.$name.'`';

@@ -29,7 +29,7 @@ if(isset($data['data'])) {
         foreach ($items as $item => $info) {
             $name = $item;
             $status = '';
-            if($info['createfile'] == \DbTools\db\schemas\DbSchemaBase::REMOVED_FILE_CONTENT) {
+            if(\DbTools\db\schemas\DbSchemaBase::isRemoved($info['createfile'])) {
                 $status = 'removed';
             } else {
                 if ($info['createdb'] == $info['createfile']) {
@@ -111,13 +111,13 @@ if(isset($data['data'])) {
                 <div class="row">
                     <div class="col-md-6">
                         <label>SVN</label>
-                        <button type="button" id="file2sql" class="btn btn-warning" onclick="file2sql()">file 2 sql</button>
-                        <button type="button" id="markAsRemoved" class="btn btn-danger" onclick="markAsRemoved()">mark as removed</button>
+                        <button type="button" id="file2sql" class="btn btn-warning" onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql</button>
+                        <button type="button" id="markAsRemoved" class="btn btn-danger" onclick="callHome('markAsRemoved')">mark as removed</button>
                     </div>
                     <div class="col-md-6">
                         <label>DB</label>
-                        <button type="button" id="sql2file" class="btn btn-primary" onclick="sql2file()">sql 2 file</button>
-                        <button type="button" id="drop" class="btn btn-danger" onclick="drop()">drop</button>
+                        <button type="button" id="sql2file" class="btn btn-primary" onclick="callHome('sql2file')">sql 2 file</button>
+                        <button type="button" id="drop" class="btn btn-danger" onclick="callHome('drop','Are you sure you want to drop it?')">drop and mark as removed</button>
                     </div>
                 </div>
                 <div class="row">
@@ -143,12 +143,7 @@ $imgDanger = Html::img($imgRoot.'/danger.png', [
                                 'title'   => 'warning',
                             ]);
 
-$urlSql2File = Yii::$app->getUrlManager()->createUrl('dbtools/manage/sql2file');
-$urlFile2Sql = Yii::$app->getUrlManager()->createUrl('dbtools/manage/file2sql');
-$urlMarkAsRemoved = Yii::$app->getUrlManager()->createUrl('dbtools/manage/mark-as-removed');
-$urlDrop = Yii::$app->getUrlManager()->createUrl('dbtools/manage/drop');
-
-$removedFileContent = \DbTools\db\schemas\DbSchemaBase::REMOVED_FILE_CONTENT;
+$urlAjax = Yii::$app->getUrlManager()->createUrl('dbtools/manage/ajax');
 
 $cbLoad='';
 $cbSave='';
@@ -311,52 +306,17 @@ $this->registerJs(<<<JS
         settingsSave('activeTab', $(e.target).attr('href'));
         $('#compare').mergely('resize', '');
     });
-
-    function sql2file() {
+    
+    function callHome(task, confirmMsg) {
         if (!CurItem) return;
 
-        var formData = new FormData();
-        formData.append('dbName', CurItem.dbName);
-        formData.append('group', CurItem.group);
-        formData.append('name', CurItem.name);
-        formData.append('customer', '$customer');
-
-        $.ajax({
-            url: '$urlSql2File',
-            data: formData,
-            processData: false,
-            contentType: false,
-            type: 'POST',
-            success: function () {
-                console.log('ok');
-                var row = table.row({selected: true});
-                if(!row) return;
-                var data = row.data();
-                if(!data) return;
-                $( row.node() ).removeClass( 'text-'+statusMap[data.status] );
-                data.createfile = data.createdb;
-                data.status = 'ok';
-                $( row.node() ).addClass( 'text-'+statusMap[data.status] );
-                row.data(data);
-                row.invalidate();
-                row.draw();
-                loadData(data);
-            },
-            error: function (xhr, status, error) {
-                console.log(xhr.responseText);
-                alert('sql2file failed: ' + xhr.responseText);
+        if(confirmMsg) {
+            var r = confirm(CurItem.name + '\\n\\n' + confirmMsg);
+    
+            //cancel clicked : stop button default action
+            if (r === false) {
+                return false;
             }
-        });
-    }
-
-    function file2sql() {
-        if (!CurItem) return;
-
-        var r = confirm("Are you sure you want to execute '"+CurItem.name+"' now?");
-
-        //cancel clicked : stop button default action
-        if (r === false) {
-            return false;
         }
 
         var formData = new FormData();
@@ -366,20 +326,28 @@ $this->registerJs(<<<JS
         formData.append('customer', '$customer');
 
         $.ajax({
-            url: '$urlFile2Sql',
+            url: '$urlAjax&task='+task,
             data: formData,
             processData: false,
             contentType: false,
             type: 'POST',
-            success: function () {
-                console.log('ok');
+            success: function (response) {
+                console.log(task + 'ok');
                 var row = table.row({selected: true});
                 if(!row) return;
                 var data = row.data();
                 if(!data) return;
+                                
                 $( row.node() ).removeClass( 'text-'+statusMap[data.status] );
-                data.createdb = data.createfile;
-                data.status = 'ok';
+                
+                var newItem = JSON.parse(response);
+                if(!newItem) {
+                    return;
+                }
+                data.createfile = newItem.createfile;
+                data.createdb = newItem.createdb;
+                data.status = newItem.status;
+                
                 $( row.node() ).addClass( 'text-'+statusMap[data.status] );
                 row.data(data);
                 row.invalidate();
@@ -388,94 +356,10 @@ $this->registerJs(<<<JS
             },
             error: function (xhr, status, error) {
                 console.log(xhr.responseText);
-                alert('file2sql failed: ' + xhr.responseText);
-            }
-        });
-    }    
-    
-    function markAsRemoved() {
-        if (!CurItem) return;
-
-        var formData = new FormData();
-        formData.append('dbName', CurItem.dbName);
-        formData.append('group', CurItem.group);
-        formData.append('name', CurItem.name);
-        formData.append('customer', '$customer');
-
-        $.ajax({
-            url: '$urlMarkAsRemoved',
-            data: formData,
-            processData: false,
-            contentType: false,
-            type: 'POST',
-            success: function () {
-                console.log('ok');
-                var row = table.row({selected: true});
-                if(!row) return;
-                var data = row.data();
-                if(!data) return;
-                $( row.node() ).removeClass( 'text-'+statusMap[data.status] );
-                data.createfile = '$removedFileContent';
-                data.createdb = '';
-                data.status = 'removed';
-                $( row.node() ).addClass( 'text-'+statusMap[data.status] );
-                row.data(data);
-                row.invalidate();
-                row.draw();
-                loadData(data);
-            },
-            error: function (xhr, status, error) {
-                console.log(xhr.responseText);
-                alert('markAsRemoved failed: ' + xhr.responseText);
-            }
-        });
-    }    
-    
-    function drop() {
-        if (!CurItem) return;
-
-        var r = confirm("Are you sure you want to drop '"+CurItem.name+"' now?");
-
-        //cancel clicked : stop button default action
-        if (r === false) {
-            return false;
-        }
-
-        var formData = new FormData();
-        formData.append('dbName', CurItem.dbName);
-        formData.append('group', CurItem.group);
-        formData.append('name', CurItem.name);
-        formData.append('customer', '$customer');
-
-        $.ajax({
-            url: '$urlDrop',
-            data: formData,
-            processData: false,
-            contentType: false,
-            type: 'POST',
-            success: function () {
-                console.log('ok');
-                var row = table.row({selected: true});
-                if(!row) return;
-                var data = row.data();
-                if(!data) return;
-                $( row.node() ).removeClass( 'text-'+statusMap[data.status] );
-                data.createfile = '$removedFileContent';
-                data.createdb = '';
-                data.status = 'removed';
-                $( row.node() ).addClass( 'text-'+statusMap[data.status] );
-                row.data(data);
-                row.invalidate();
-                row.draw();
-                loadData(data);
-            },
-            error: function (xhr, status, error) {
-                console.log(xhr.responseText);
-                alert('drop failed: ' + xhr.responseText);
+                alert(task + ' failed: ' + xhr.responseText);
             }
         });
     }
-
 
     function selectItem(val) {
         //alert('select-'+val);

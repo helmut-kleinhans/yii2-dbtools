@@ -85,59 +85,30 @@ class ManageController extends Controller {
         ]);
     }
 
-    public function actionSql2file()
-    {
+    public function actionAjax() {
         $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
         $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
-        if (empty($group) || empty($name))
-        {
-            throw new \Exception('Empty param');
-        }
-
-        $c = $this->group2class($group);
-        $c->sql2file($name);
-    }
-
-    public function actionFile2sql()
-    {
-        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
-        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
-        if (empty($group) || empty($name))
-        {
+        $task = HelperGlobal::paramNeeded($_REQUEST, 'task');
+        if (empty($group) || empty($name)) {
             throw new \Exception('Empty param', 500);
         }
 
         $c = $this->group2class($group);
-        $c->file2sql($name);
-    }
 
-    public function actionMarkAsRemoved()
-    {
-        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
-        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
-        if (empty($group) || empty($name))
-        {
-            throw new \Exception('Empty param', 500);
+        $ret = [];
+        switch ($task) {
+            case 'file2sql': $ret = $c->file2sql($name); break;
+            case 'sql2file': $ret = $c->sql2file($name); break;
+            case 'markAsRemoved': $ret = $c->markAsRemoved($name,false); break;
+            case 'drop': $ret = $c->markAsRemoved($name,true); break;
+            default:
+                throw new \Exception("unknown task: $task");
         }
-
-        $c = $this->group2class($group);
-        $c->markAsRemoved($name);
+        $ret['name'] = $name;
+        $ret['group'] = $group;
+        $ret['task'] = $task;
+        return json_encode($ret);
     }
-
-    public function actionDrop()
-    {
-        $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
-        $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
-        if (empty($group) || empty($name))
-        {
-            throw new \Exception('Empty param', 500);
-        }
-
-        $c = $this->group2class($group);
-        $c->drop($name);
-        $c->markAsRemoved($name);
-    }
-
     private function group2class(string $group) : DbSchemaBase
     {
         switch ($group)

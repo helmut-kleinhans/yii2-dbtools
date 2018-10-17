@@ -228,6 +228,11 @@ class DbSchemaTables extends DbSchemaBase
         return $ret;
     }
 
+    public function file2sql($name) : array
+    {
+        throw new \Exception('not allowed');
+    }
+
     public function drop($name)
     {
         $sql = 'DROP TABLE IF EXISTS `'.$name.'`';
