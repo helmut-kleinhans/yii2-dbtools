@@ -21,9 +21,7 @@ class HelperGlobal
     {
         if (empty($array) || !isset($array[$param]))
         {
-            BaseController::setError('Needed param is missing: ' . $param);
-
-            return '';
+            throw new \Exception('Needed param is missing: ' . $param);
         }
 
         return $array[$param];
