@@ -117,4 +117,53 @@ class DbClassProcedure extends DbClassBase
     public function getSelects() {
         return $this->selectresults;
     }
+
+    public function indexedSelect(string $select, string $key, array $format = NULL): array
+    {
+        if (!array_key_exists($select, $this->selectresults)) {
+            throw new \Exception('selectresult unknown: ' . $select);
+        }
+
+        if (empty($key)) {
+            throw new \Exception('key needs to be set');
+        }
+
+        $data = $this->selectresults[$select];
+
+        if (empty($data)) {
+            return [];
+        }
+
+        // check key
+        if (!array_key_exists($key, $data[0])) {
+            throw new \Exception('key is not available: key(' . $key . ') keys(' . implode(',', array_keys($data[0])) . ')');
+        }
+
+        // check format
+        if (!empty($format)) {
+            foreach ($format as $ok => $nk) {
+                if (!array_key_exists($ok, $data[0])) {
+                    throw new \Exception('format key is not available: key(' . $ok . ') keys(' . implode(',', array_keys($data[0])) . ')');
+                }
+            }
+        }
+
+        $ret = [];
+        if (!empty($format)) {
+            foreach ($data as $d) {
+                $nd = [];
+                foreach ($format as $ok => $nk) {
+                    $nd[$nk] = $d[$ok];
+                }
+                $ret[$d[$key]] = $nd;
+            }
+        }
+        else {
+            foreach ($data as $d) {
+                $ret[$d[$key]] = $d;
+            }
+        }
+
+        return $ret;
+    }
 }
