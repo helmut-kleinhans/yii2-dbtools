@@ -486,8 +486,8 @@ class DbSchemaBase
         $param = [];
         $return = '';
         $data = self::getBetween($body, '/**', '*/');
-        if (!empty($data) && isset($data[0])) {
-            $in = self::brief2array($data[0]);
+        if (!empty($data)) {
+            $in = self::brief2array(array_shift($data));
 
             //----------------------------------------------------------------------------------------------
             // To Text
@@ -776,7 +776,7 @@ class DbSchemaBase
                 else {
                     $p = self::splitDeclare($dec);
                     $ret['unknown'][] = $p;
-                    $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: "' . $dec . '"';
+                    $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: invalid declare formating ["DECLARE ' . $dec . '"]';
                     if (!self::inBody($body, $p['name'], $pos)) {
                         $ret['warnings'][] = 'DECLARE [ ' . $p['name'] . ' ]: unused';
                     }
