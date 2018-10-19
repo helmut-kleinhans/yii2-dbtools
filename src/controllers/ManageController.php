@@ -14,13 +14,11 @@ use DbTools\helper\HelperGlobal;
 use yii\web\Controller;
 use Yii;
 
-class ManageController extends Controller {
-
+class ManageController extends Controller
+{
     const DEFAULT_DB_NAME = 'db';
-
     /** @var string */
     private $dbName = self::DEFAULT_DB_NAME;
-
     /** @var \yii\db\Connection */
     private $db;
 
@@ -33,10 +31,10 @@ class ManageController extends Controller {
 
     private function setDb()
     {
-        $db = HelperGlobal::paramOptional($_REQUEST, 'dbName',NULL);
-        if($db===NULL) {
-            $db = HelperGlobal::paramOptional($_REQUEST, 'db',NULL);
-            if($db===NULL) {
+        $db = HelperGlobal::paramOptional($_REQUEST, 'dbName', NULL);
+        if ($db === NULL) {
+            $db = HelperGlobal::paramOptional($_REQUEST, 'db', NULL);
+            if ($db === NULL) {
                 $this->setDefaultDb();
 
                 return;
@@ -47,7 +45,8 @@ class ManageController extends Controller {
 
         try {
             $this->db = Yii::$app->$db;
-        } catch(\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             throw new \Exception("given db is unknown/wrong: $db");
         }
     }
@@ -57,15 +56,18 @@ class ManageController extends Controller {
         $db = $this->dbName;
         try {
             $this->db = Yii::$app->$db;
+
             return;
-        } catch(\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             //ignore
         }
 
         $dbs = HelperGlobal::getDBs();
-        foreach($dbs as $n=>$c) {
+        foreach ($dbs as $n => $c) {
             $this->dbName = $n;
             $this->db = $c;
+
             return;
         }
 
@@ -85,7 +87,8 @@ class ManageController extends Controller {
         ]);
     }
 
-    public function actionAjax() {
+    public function actionAjax()
+    {
         $group = HelperGlobal::paramNeeded($_REQUEST, 'group');
         $name = HelperGlobal::paramNeeded($_REQUEST, 'name');
         $task = HelperGlobal::paramNeeded($_REQUEST, 'task');
@@ -97,22 +100,35 @@ class ManageController extends Controller {
 
         $ret = [];
         switch ($task) {
-            case 'file2sql': $ret = $c->file2sql($name); break;
-            case 'sql2file': $ret = $c->sql2file($name); break;
-            case 'markAsRemoved': $ret = $c->markAsRemoved($name,false); break;
-            case 'drop': $ret = $c->markAsRemoved($name,true); break;
+            case 'sql2file':
+                $ret = $c->taskSql2File($name);
+                break;
+            case 'file2sql':
+                $ret = $c->taskFile2Sql($name);
+                break;
+            case 'markAsRemoved':
+                $ret = $c->taskMarkAsRemoved($name);
+                break;
+            case 'dropAndMarkAsRemoved':
+                $ret = $c->taskDropAndMarkAsRemoved($name);
+                break;
+            case 'drop':
+                $ret = $c->taskDrop($name, true);
+                break;
             default:
                 throw new \Exception("unknown task: $task");
         }
+        $ret['status'] = DbSchemaBase::getStatus($ret['createfile'], $ret['createdb']);
         $ret['name'] = $name;
         $ret['group'] = $group;
         $ret['task'] = $task;
+
         return json_encode($ret);
     }
-    private function group2class(string $group) : DbSchemaBase
+
+    private function group2class(string $group): DbSchemaBase
     {
-        switch ($group)
-        {
+        switch ($group) {
             case DbSchemaProcedures::cType:
                 return new DbSchemaProcedures($this->dbName, $this->db);
                 break;
@@ -148,38 +164,30 @@ class ManageController extends Controller {
         $classes[DbSchemaTriggers::cType] = new DbSchemaTriggers($this->dbName, $this->db);
         $classes[DbSchemaEvents::cType] = new DbSchemaEvents($this->dbName, $this->db);
 
-        foreach ($classes as $type => $c)
-        {
+        foreach ($classes as $type => $c) {
             $ret['data'][$type] = $c->info();
         }
         $search4use = [];
-        foreach ($ret['data'] as $type => $v)
-        {
-            foreach ($v as $name => $vd)
-            {
-                if (isset($search4use[$name]))
-                {
+        foreach ($ret['data'] as $type => $v) {
+            foreach ($v as $name => $vd) {
+                if (isset($search4use[$name])) {
                     $ret['data'][$type][$name]['warnings'][] = 'Duplicate name in: ' . $search4use[$name];
                     $ret['data'][$search4use[$name]][$name]['warnings'][] = 'Duplicate name in: ' . $type;
                 }
-                else
-                {
+                else {
                     $search4use[$name] = $type;
                 }
             }
         }
-        foreach ($classes as $type => $c)
-        {
+        foreach ($classes as $type => $c) {
             $ret['data'][$type] = $c->findUses($ret['data'][$type], $search4use);
         }
         $ret['data'] = DbSchemaBase::mergeData($ret['data']);
         $ret['data'] = DbSchemaBase::setUsedBy($ret['data']);
-        foreach ($classes as $type => $c)
-        {
+        foreach ($classes as $type => $c) {
             $ret['data'][$type] = $c->finalize($ret['data'][$type]);
         }
 
         return $ret;
     }
-
 }

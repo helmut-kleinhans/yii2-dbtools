@@ -13,12 +13,12 @@ $statusmap = [
     'removed' =>'default',
 ];
 
-$specialFlags=['unused','noflags'];
+$specialFlags=['unused','noflags','onlywarnings'];
 
 $jsonDataTable = [];
 
 if(isset($data['data'])) {
-    
+
     foreach ($data['data'] as $group => $items) {
         if (empty($items)) {
             continue;
@@ -27,36 +27,13 @@ if(isset($data['data'])) {
             continue;
         }
 
-
         foreach ($items as $item => $info) {
             $name = $item;
-            $status = '';
-            if(\DbTools\db\schemas\DbSchemaBase::isRemoved($info['createfile'])) {
-                $status = 'removed';
-            } else {
-                if ($info['createdb'] == $info['createfile']) {
-                    $status = 'ok';
-                }
-                else {
-                    if (empty($info['createdb'])) {
-                        $status = 'missing';
-                    }
-                    else {
-                        if (empty($info['createfile'])) {
-                            $status = 'new';
-                        }
-                        else {
-                            $status = 'different';
-                        }
-                    }
-                }
-            }
-            $info['status'] = $status;
+            $info['status'] = \DbTools\db\schemas\DbSchemaBase::getStatus($info['createfile'],$info['createdb']);
             $info['dbName'] = $active;
             $info['group'] = $group;
             $info['name'] = $name;
             $info['key'] = $active . '|' . $group . '|' . $name;
-            //echo("<option class='st_" . $status . "' value='" . $name . "'>&nbsp;&nbsp;" . $name . "</option>\n");
             $jsonDataTable[] = $info;
         }
     }
@@ -75,8 +52,13 @@ if(isset($data['data'])) {
     <div class="col-md-3">
         <fieldset id="templates">
             <div class="col">
-                <button href="#panel_filters" class="btn btn-info" data-toggle="collapse">Filters</button>
-
+                <div class="form-inline">
+                    <button href="#panel_filters" class="btn btn-info" data-toggle="collapse">Filters</button>
+                    <div class="input-group">
+                        <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+                        <input type="text" id="i_filter_search" class="form-control" placeholder="Search">
+                    </div>
+                </div>
                 <div class="panel-group collapse" id="panel_filters">
                     <div class="panel panel-primary">
                         <div class="panel-heading">Status</div>
@@ -94,13 +76,20 @@ if(isset($data['data'])) {
                         <div class="panel-heading">Flags</div>
                         <div class="panel-body">
                             <?php
-                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_default_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_flags_default_', $(this).prop('checked') );cbSetAllChecked('cb_filter_flags_special_',false);") . '<br>';
+                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_all', 'change all', 'info', false, 'cbFlagsAll($(this))') . '<br>';
                             foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_default_' . $name, $name, 'default', false, 'onclickFlagsDefault($(this))');
+                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_' . $name, $name, 'default', false, 'cbFlags($(this))');
                             }
-                            echo '<br>';
+                            ?>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">Special</div>
+                        <div class="panel-body">
+                            <?php
                             foreach ($specialFlags as $name) {
-                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_special_' . $name, $name, 'warning', false, 'onclickFlagsSpecial($(this))');
+                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_special_' . $name, $name, 'warning', false, 'cbSpecial($(this))');
                             }
                             ?>
                         </div>
@@ -120,8 +109,9 @@ if(isset($data['data'])) {
         <div class="tab-content">
             <div class="tab-pane area active" id="A">
                 <div class="row">
-                    <div class="col-md-6"><strong>Item: </strong><span id="itemname">...</span></div>
-                    <div class="col-md-3"><strong>Status: </strong><span id="itemstatus">...</span></div>
+                    <div class="col-md-3"><strong>Item: </strong><span id="itemname">...</span></div>
+                    <div class="col-md-2"><strong>Status: </strong><span id="itemstatus">...</span></div>
+                    <div class="col-md-7"><strong>Flags: </strong><span id="itemflags">...</span></div>
                 </div>
                 <div class="row">
                     <div class="col-md-12">
@@ -138,13 +128,14 @@ if(isset($data['data'])) {
                 <div class="row">
                     <div class="col-md-6">
                         <label>SVN</label>
-                        <button type="button" id="file2sql" class="btn btn-warning" onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql</button>
+                        <button type="button" id="file2sql" class="btn btn-primary" onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql</button>
                         <button type="button" id="markAsRemoved" class="btn btn-danger" onclick="callHome('markAsRemoved')">mark as removed</button>
                     </div>
                     <div class="col-md-6">
                         <label>DB</label>
-                        <button type="button" id="sql2file" class="btn btn-primary" onclick="callHome('sql2file')">sql 2 file</button>
-                        <button type="button" id="drop" class="btn btn-danger" onclick="callHome('drop','Are you sure you want to drop it?')">drop and mark as removed</button>
+                        <button type="button" id="sql2file" class="btn btn-info" onclick="callHome('sql2file')">sql 2 file</button>
+                        <button type="button" id="drop" class="btn btn-danger" onclick="callHome('drop','Are you sure you want to drop it?')">drop</button>
+                        <button type="button" id="dropAndMarkAsRemoved" class="btn btn-warning" onclick="callHome('dropAndMarkAsRemoved','Are you sure you want to drop it?')">drop and mark as removed</button>
                     </div>
                 </div>
                 <div class="row">
@@ -172,25 +163,28 @@ $imgDanger = Html::img($imgRoot.'/danger.png', [
 
 $urlAjax = Yii::$app->getUrlManager()->createUrl('dbtools/manage/ajax');
 
-$cbLoad='';
-$cbSave='';
+$settingsLoad='';
+$settingsSave='';
 
 foreach ($statusmap as $status=>$style)
 {
-    $cbLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_status_' . $status);
-    $cbSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_status_' . $status);
+    $settingsLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_status_' . $status);
+    $settingsSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_status_' . $status);
 }
 
+$settingsLoad .= \DbTools\helper\HelperView::getValSettingsLoad('i_filter_search');
+$settingsSave_Filter_Search = \DbTools\helper\HelperView::getValSettingsSave('i_filter_search');
+
 foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-    $cbLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_flags_default_' . $name);
-    $cbSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_flags_default_' . $name);
+    $settingsLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_flags_' . $name);
+    $settingsSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_flags_' . $name);
 }
 
 $customer = isset($_REQUEST['customer']) ? $_REQUEST['customer'] : '';
 
 $checkFlagsDefault = [];
 foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-    $checkFlagsDefault[]="if( $('#cb_filter_flags_default_$name').prop(\"checked\")){fd=true; hd = (hd || value['$name'] == 1)}";
+    $checkFlagsDefault[]="if( $('#cb_filter_flags_$name').prop(\"checked\")){fd=true; hd = (hd || value['$name'] == 1)}";
 }
 $checkFlagsDefault='var fd=false;hd=false; '.implode("\n",$checkFlagsDefault).' return !fd || hd;';
 $this->registerJs(<<<JS
@@ -199,48 +193,69 @@ $this->registerJs(<<<JS
     var statusMap = $jsonStatusmap;
     var CurItem = null;
 
+    var curCol = 0;
+    var colGroup = curCol++;
+    var colWarning = curCol++;
+    var colStatus = curCol++;
+    var colName = curCol++;
 
-    var colGroup = 0;
-    var colWarning = 1;
-    var colStatus = 2;
-    var colName = 3;
-
-    function checkSpecialFlagsUnused(value) { 
-        return !value['export'] && !value['select'] && !value['usedBy'] && !value['devel'] && !value['legacy']
-        return false;
+    function checkSpecialUnused(rowData) { 
+        var flags = rowData.flags;
+        return !flags['export'] && !flags['select'] && !flags['usedBy'] && !flags['devel'] && !flags['legacy'];
     }
-    function checkSpecialFlagsNoFlags(value) {      
-        return value.length == 0;
+    
+    function checkSpecialNoFlags(rowData) {      
+        return rowData.flags.length == 0;
     }
+    
+    function checkSpecialOnlyWadnings(rowData) {      
+        console.log(rowData);
+        return rowData.length == 0;
+    }
+    
     function checkFlags(rowData) {
         var value = rowData.flags;
         
-        if($('#cb_filter_flags_special_unused').prop("checked")) return checkSpecialFlagsUnused(value);
-        if($('#cb_filter_flags_special_noflags').prop("checked")) return checkSpecialFlagsNoFlags(value);
-                
         $checkFlagsDefault;
+    }
+    
+    function checkSpecial(rowData) {
+        if($('#cb_filter_special_unused').prop("checked")) return checkSpecialUnused(rowData);
+        if($('#cb_filter_special_noflags').prop("checked")) return checkSpecialNoFlags(rowData);
+        return true;
+    }
+    
+    function checkRemoved(rowData) { 
+        return rowData.status!='removed' || rowData.createdb !='';
     }
     
     /* Custom filtering function which will search data in column four between two values */
     $.fn.dataTable.ext.search.push(
         function( settings, searchData, index, rowData, counter ) {
+            if(!checkRemoved(rowData)) return false;
             if(!$('#cb_filter_status_'+rowData.status).prop("checked")) return false;
-            if (!checkFlags(rowData)) return false;
+            if(!checkFlags(rowData)) return false;
+            if(!checkSpecial(rowData)) return false;
             return true;
         }
     );
-
-    function onclickFlagsDefault(obj) {
+    
+    function cbFlagsAll(obj) {
+        cbSetAllChecked('cb_filter_flags_', obj.prop('checked'));
+        cbSetAllChecked('cb_filter_special_',false);    
+    }
+    
+    function cbFlags(obj) {
         if(obj.prop("checked")) {
-            cbSetAllChecked('cb_filter_flags_special_',false);
+            cbSetAllChecked('cb_filter_special_',false);
         }
         updateItemTable();
     }
 
-    function onclickFlagsSpecial(obj) {
+    function cbSpecial(obj) {
         if(obj.prop("checked")) {
-            cbSetAllChecked('cb_filter_flags_default_', false);
-            cbSetAllChecked('cb_filter_flags_special_',false);
+            cbSetAllChecked('cb_filter_flags_', false);
+            cbSetAllChecked('cb_filter_special_',false);
             obj.prop("checked",true);
         }
         updateItemTable();
@@ -256,6 +271,7 @@ $this->registerJs(<<<JS
     function initItemTable() {
 
         table = $('#itemtable').DataTable( {
+            dom: 'lrtip',
             responsive: false,
             select: true,
             stateSave: true,
@@ -369,7 +385,7 @@ $this->registerJs(<<<JS
         });
         $('#compare').mergely('resize', '');
 
-        $cbLoad
+        $settingsLoad
 
         $('#contentTab a[href="' + settingsLoad('activeTab','#A') + '"]').tab('show');
 
@@ -377,6 +393,11 @@ $this->registerJs(<<<JS
 
         $('#compare').mergely('resize', '');
 
+        $('#i_filter_search').keyup(function(){
+            $settingsSave_Filter_Search
+            table.search($(this).val()).draw() ;
+        });
+        table.search($('#i_filter_search').val()).draw() ;
     });
 
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
@@ -409,7 +430,7 @@ $this->registerJs(<<<JS
             contentType: false,
             type: 'POST',
             success: function (response) {
-                console.log(task + 'ok');
+                console.log(task + ' ok');
                 var row = table.row({selected: true});
                 if(!row) return;
                 var data = row.data();
@@ -421,14 +442,30 @@ $this->registerJs(<<<JS
                 if(!newItem) {
                     return;
                 }
+                
+                if(newItem.status=='') {
+                    removeRow(row);
+                    return;
+                }
                 data.createfile = newItem.createfile;
                 data.createdb = newItem.createdb;
-                data.status = newItem.status;
+                data.status = newItem.status;                
                 
+                var nrow = nearestVisibleRow(row,false);
+                    
                 $( row.node() ).addClass( 'text-'+statusMap[data.status] );
                 row.data(data);
                 row.invalidate();
                 row.draw();
+                
+                
+                var nextrow = table.row({selected: true, filter: 'applied'});
+                //check if last selected row has been filtered out
+                if((!nextrow || nextrow.indexes().length == 0) && nrow) {
+                    selectRow(table.row("#"+nrow.id()));
+                    return;
+                }               
+                
                 loadData(data);
             },
             error: function (xhr, status, error) {
@@ -437,26 +474,83 @@ $this->registerJs(<<<JS
             }
         });
     }
+    
+    function removeRow(row) {
+        var nrow = nearestVisibleRow(row,false);
+        selectRow(nrow);
+        row.remove();
+        row.invalidate();
+        row.draw();
+    }
+    
+    function nearestVisibleRow(row,useself=true) {
+        var myFilteredRows = table.rows({filter: 'applied'});
+        
+        var last = null;
+        var found=false;
+
+        var indexes = myFilteredRows.indexes();
+        
+        for (i = 0; i < indexes.length; i++) {
+            var index = indexes[i];
+            if(row.index() == index) {
+                found=true;
+                if(useself) {
+                    return row;
+                }
+                continue;
+            }
+            
+            if(!found) {
+                last=index;
+            } else {
+                return table.row(index);
+            }
+        } 
+        
+        return table.row(last);
+    }
 
     function selectItem(val) {
         //alert('select-'+val);
         if(val==null) return true;
-        var row = table.row('#'+val);
+        return selectRow(table.row('#'+val));
+    }
+
+    function selectRow(row) {
         if(!row) return true;
         table.rows({selected: true}).deselect();
         row.select();
         row.scrollTo();
         loadData(row.data());
-
         return true;
     }
 
     function updateItemTable() {
         if(!table) return;
 
-        $cbSave
+        $settingsSave
 
+        var row = table.row({selected: true});
+        var nrow = nearestVisibleRow(row,false);
+            
         table.draw();
+
+        var nextrow = table.row({selected: true, filter: 'applied'});
+
+        //check if last selected row has been filtered out
+        if((!nextrow || nextrow.indexes().length == 0) && nrow) {
+            selectRow(table.row("#"+nrow.id()));
+            return;
+        }
+    }
+    
+    function buttonEnable(item) {
+        item.prop('disabled', false);
+    }
+    
+    function buttonDisable(item) {
+        item.prop('disabled', true);        
     }
 
     function loadData(data) {
@@ -475,6 +569,14 @@ $this->registerJs(<<<JS
         else {
             $('#itemstatus').html('');
         }
+        console.log(CurItem.flags);
+        console.log(CurItem.flags.length);
+        
+        var htmlFlags='';
+        Object.keys(CurItem.flags).forEach(function(key,index) {
+            htmlFlags+='<span class="label label-default">'+key+'</span>&nbsp;';
+        });
+        $('#itemflags').html(htmlFlags);
 
         if (CurItem.warnings) {
             $('#itemwarnings').show();
@@ -505,46 +607,53 @@ $this->registerJs(<<<JS
         switch(CurItem.status)
         {
             case 'ok':
-                $('#file2sql').hide();
-                $('#sql2file').hide();
-                $('#markAsRemoved').hide();
-                $('#drop').show();
+                buttonDisable($('#file2sql'));
+                buttonDisable($('#sql2file'));
+                buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#drop'));
+                buttonEnable($('#dropAndMarkAsRemoved'));                
                 break;
             case 'missing':
-                $('#file2sql').show();
-                $('#sql2file').hide();
-                $('#markAsRemoved').show();
-                $('#drop').hide();
+                buttonEnable($('#file2sql'));
+                buttonDisable($('#sql2file'));
+                buttonEnable($('#markAsRemoved'));
+                buttonDisable($('#drop'));
+                buttonDisable($('#dropAndMarkAsRemoved'));
                 break;
             case 'new':
-                $('#file2sql').hide();
-                $('#sql2file').show();
-                $('#markAsRemoved').hide();
-                $('#drop').show();
+                buttonDisable($('#file2sql'));
+                buttonEnable($('#sql2file'));
+                buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#drop'));
+                buttonEnable($('#dropAndMarkAsRemoved'));
                 break;
             case 'different':
-                $('#file2sql').show();
-                $('#sql2file').show();
-                $('#markAsRemoved').hide();
-                $('#drop').show();
+                buttonEnable($('#file2sql'));
+                buttonEnable($('#sql2file'));
+                buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#drop'));
+                buttonEnable($('#dropAndMarkAsRemoved'));
                 break;
             case 'removed':
-                $('#file2sql').hide();
+                buttonEnable($('#file2sql'));
                 if(CurItem.createdb != '') {
-                    $('#sql2file').show();
-                    $('#drop').show();
+                    buttonEnable($('#sql2file'));
+                    buttonEnable($('#drop'));
+                    buttonEnable($('#dropAndMarkAsRemoved'));
                 } else {
-                    $('#sql2file').hide();                    
-                    $('#drop').hide();
+                    buttonDisable($('#sql2file'));                    
+                    buttonDisable($('#drop'));
+                    buttonDisable($('#dropAndMarkAsRemoved'));
                 }
-                $('#markAsRemoved').hide();
+                buttonDisable($('#markAsRemoved'));
                 break;
             default:
                 alert('unknown status:'+CurItem.status);
-                $('#file2sql').hide();
-                $('#sql2file').hide();
-                $('#markAsRemoved').hide();
-                $('#drop').hide();
+                buttonDisable($('#file2sql'));
+                buttonDisable($('#sql2file'));
+                buttonDisable($('#markAsRemoved'));
+                buttonDisable($('#drop'));
+                buttonDisable($('#dropAndMarkAsRemoved'));
         }
         
     }

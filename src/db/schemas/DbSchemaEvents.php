@@ -8,12 +8,12 @@ class DbSchemaEvents extends DbSchemaBase
 {
 	const cType = 'events';
 
-	public function __construct($dbName, $db)
+    public function __construct(string $dbName, \yii\db\Connection $db)
 	{
 		parent::__construct($dbName, $db, self::cType);
 	}
 
-	public function getList()
+	protected function getList(): array
 	{
 		$query = (new \yii\db\Query())->select(['*'])->from('information_schema.events')->where('EVENT_SCHEMA=DATABASE()');
 		$rows = $query->createCommand($this->db)->queryAll();
@@ -27,7 +27,7 @@ class DbSchemaEvents extends DbSchemaBase
 		return $ret;
 	}
 
-	public function getCreate($name)
+	protected function getCreate(string $name): string
 	{
 		$row = $this->db->createCommand('SHOW CREATE EVENT ' . $this->db->quoteTableName($name))->queryOne();
 
@@ -42,8 +42,8 @@ class DbSchemaEvents extends DbSchemaBase
 		}
 
         $full[] = 'DELIMITER ';
-        $full[] = 'USE `'.self::getDbName().'`';
-        $full[] = 'DROP EVENT /*!50032 IF EXISTS */ `'.$name.'`';
+        $full[] = 'USE `'.$this->getDbName().'`';
+        $full[] = $this->sqlDrop($name);
         $full[] = $sql;
         $full[] = 'DELIMITER ;';
 
@@ -52,15 +52,14 @@ class DbSchemaEvents extends DbSchemaBase
 		return $sql;
 	}
 
-    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+    protected function doAdditionalInfo(array $data, array &$brief, array &$ret): void {
         if($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
             $ret['warnings'][] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
         }
     }
 
-    public function drop($name)
+    protected function sqlDrop(string $name): string
     {
-        $sql = 'DROP EVENT /*!50032 IF EXISTS */ `'.$name.'`';
-        return $this->executeSql($sql);
+        return 'DROP EVENT /*!50032 IF EXISTS */ `'.$name.'`';
     }
 }

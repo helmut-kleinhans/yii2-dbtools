@@ -34,8 +34,7 @@ class DbConnection extends Connection
 			return $this->createPdoInstance();
 		}
 	}
-	
-	
+
     public function processException($e)
     {
         if ($this->blockReconnect) {

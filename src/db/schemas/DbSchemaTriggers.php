@@ -8,12 +8,36 @@ class DbSchemaTriggers extends DbSchemaBase
 {
 	const cType = 'triggers';
 
-	public function __construct($dbName, $db)
+    public function __construct(string $dbName, \yii\db\Connection $db)
 	{
 		parent::__construct($dbName, $db, self::cType);
 	}
 
-	public function getList()
+    public function findUses(array $data, array $search4uses): array
+    {
+        $result = parent::findUses($data, $search4uses);
+        foreach ($result as $name => $value)
+        {
+            /*
+            if(!isset($value['uses'][DbSchemaTables::cType]) || !in_array($value['helper']['EVENT_OBJECT_TABLE'], $value['uses'][DbTables::cType]))
+            {
+                $result[$name]['uses'][DbSchemaTables::cType][]=$value['helper']['EVENT_OBJECT_TABLE'];
+            }
+            */
+            if (isset($value['uses'][DbSchemaTables::cType]))
+            {
+                $result[$name]['uses'][DbSchemaTables::cType] = array_diff($value['uses'][DbSchemaTables::cType], [$value['helper']['EVENT_OBJECT_TABLE']]);
+                if (empty($result[$name]['uses'][DbSchemaTables::cType]))
+                {
+                    unset($result[$name]['uses'][DbSchemaTables::cType]);
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    protected function getList(): array
 	{
 		$query = (new \yii\db\Query())->select(['*'])->from('information_schema.triggers')->where('TRIGGER_SCHEMA=DATABASE()');
 		$rows = $query->createCommand($this->db)->queryAll();
@@ -27,7 +51,7 @@ class DbSchemaTriggers extends DbSchemaBase
 		return $ret;
 	}
 
-	public function getCreate($name)
+	protected function getCreate(string $name): string
 	{
 		$row = $this->db->createCommand('SHOW CREATE TRIGGER ' . $this->db->quoteTableName($name))->queryOne();
 		if (isset($row['SQL Original Statement']))
@@ -41,8 +65,8 @@ class DbSchemaTriggers extends DbSchemaBase
 		}
 
         $full[] = 'DELIMITER ';
-        $full[] = 'USE `'.self::getDbName().'`';
-        $full[] = 'DROP TRIGGER /*!50032 IF EXISTS */ `'.$name.'`';
+        $full[] = 'USE `'.$this->getDbName().'`';
+        $full[] = $this->sqlDrop($name);
         $full[] = $sql;
         $full[] = 'DELIMITER ;';
 
@@ -51,31 +75,7 @@ class DbSchemaTriggers extends DbSchemaBase
 		return $sql;
 	}
 
-	public function findUses($data, $search4uses)
-	{
-		$result = parent::findUses($data, $search4uses);
-		foreach ($result as $name => $value)
-		{
-			/*
-			if(!isset($value['uses'][DbSchemaTables::cType]) || !in_array($value['helper']['EVENT_OBJECT_TABLE'], $value['uses'][DbTables::cType]))
-			{
-				$result[$name]['uses'][DbSchemaTables::cType][]=$value['helper']['EVENT_OBJECT_TABLE'];
-			}
-			*/
-			if (isset($value['uses'][DbSchemaTables::cType]))
-			{
-				$result[$name]['uses'][DbSchemaTables::cType] = array_diff($value['uses'][DbSchemaTables::cType], [$value['helper']['EVENT_OBJECT_TABLE']]);
-				if (empty($result[$name]['uses'][DbSchemaTables::cType]))
-				{
-					unset($result[$name]['uses'][DbSchemaTables::cType]);
-				}
-			}
-		}
-
-		return $result;
-	}
-
-    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret)
+    protected function doAdditionalInfo(array $data, array &$brief, array &$ret): void
     {
         if(isset($data['helper'])) {
             if ($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
@@ -98,9 +98,8 @@ class DbSchemaTriggers extends DbSchemaBase
         }
     }
 
-    public function drop($name)
+    protected function sqlDrop(string $name): string
     {
-        $sql = 'DROP TRIGGER /*!50032 IF EXISTS */ `'.$name.'`';
-        return $this->executeSql($sql);
+        return 'DROP TRIGGER /*!50032 IF EXISTS */ `'.$name.'`';
     }
 }

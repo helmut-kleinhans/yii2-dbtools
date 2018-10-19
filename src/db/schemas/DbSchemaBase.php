@@ -1,16 +1,17 @@
 <?php
+
 namespace DbTools\db\schemas;
 
 use DbToolsExport\dbvalues\DbValues;
 use DbTools\db\values\DbCheckValues;
 use DbTools\DbToolsModule;
 use Yii;
+use yii\db\Exception;
 use yii\helpers\FileHelper;
 
 class DbSchemaBase
 {
-    const REMOVED_FILE_CONTENT = '--REMOVED--';
-
+    const REMOVED_FILE_CONTENT = '/* -- REMOVED -- */';
     const FLAGS_DEPRECATED = 'deprecated';
     const FLAGS_LEGACY = 'legacy';
     const FLAGS_DEVEL = 'devel';
@@ -19,7 +20,6 @@ class DbSchemaBase
     const FLAGS_SELECT = 'select';
     const FLAGS_USEDBY = 'usedBy';
     const FLAGS_CONSTANT = 'constant';
-
     const FLAGS_ALL = [
         self::FLAGS_DEPRECATED,
         self::FLAGS_LEGACY,
@@ -30,24 +30,351 @@ class DbSchemaBase
         self::FLAGS_USEDBY,
         self::FLAGS_CONSTANT,
     ];
-
-	public $dbName;
-	public $db;
-	public $dir;
-    public $doCreate=true;
-    public $doFormat=true;
-	public $doOnlySvn=false;
-
+    /** @var string */
+    public $dbName;
+    /** @var \yii\db\Connection */
+    public $db;
+    /** @var string */
+    public $dir;
+    /** @var bool */
+    public $doCreate = true;
+    /** @var bool */
+    public $doFormat = true;
+    /** @var bool */
+    public $doOnlySvn = false;
+    /** @var array */
     private static $databases = [];
-
-	public function __construct($dbName, $db, $subdir)
-	{
-		$this->dbName = $dbName;
-		$this->db = $db;
+    #-------------------------------------------------------------------------------------------------------------------
+    # Public
+    #-------------------------------------------------------------------------------------------------------------------
+    public function __construct(string $dbName, \yii\db\Connection $db, string $subdir)
+    {
+        $this->dbName = $dbName;
+        $this->db = $db;
         $this->dir = DbToolsModule::getInstance()->exportPath . '/export/' . $dbName . '/' . $subdir;
     }
 
-    protected function getDbName()
+    public function taskSql2File(string $name): array
+    {
+        $data = $this->getCreate($name);
+
+        if (empty($data)) {
+            throw new \Exception('getCreate failed', 500);
+        }
+
+        $this->setFileContent($name, $data);
+
+        return [
+            'createdb'   => $data,
+            'createfile' => $data,
+        ];
+    }
+
+    public function taskFile2Sql(string $name): array
+    {
+        $data = $this->getFileContent($name);
+
+        if (empty($data)) {
+            throw new \Exception('file was empty');
+        }
+
+        $datadb = trim(str_replace(self::REMOVED_FILE_CONTENT,'',$data));
+
+        $this->executeSql($datadb);
+
+        return [
+            'createdb'   => $datadb,
+            'createfile' => $data,
+        ];
+    }
+
+    public function taskMarkAsRemoved(string $name): array
+    {
+        $data = $this->getFileContent($name);
+
+        if (empty($data)) {
+            throw new \Exception('file was empty');
+        }
+
+        //prev marked as removed --- grep old file content
+        if (self::isRemoved($data)) {
+            throw new Exception('file already marked as removed');
+        }
+
+        $content = self::REMOVED_FILE_CONTENT . "\n\n" . $data;
+
+        $this->setFileContent($name, $content);
+
+        $createDb = $this->getCreate($name);
+
+        return [
+            'createdb'   => $createDb,
+            'createfile' => $content,
+        ];
+    }
+
+    public function taskDropAndMarkAsRemoved(string $name): array
+    {
+        $data = $this->getCreate($name);
+
+        $content = self::REMOVED_FILE_CONTENT . "\n\n" . $data;
+
+        $this->setFileContent($name, $content);
+
+        $this->doDrop($name);
+
+        return [
+            'createdb'   => '',
+            'createfile' => $content,
+        ];
+    }
+
+    public function taskDrop(string $name): array
+    {
+        $this->doDrop($name);
+
+        return [
+            'createdb'   => '',
+            'createfile' => $this->getFileContent($name),
+        ];
+    }
+
+    public function info(): array
+    {
+        $ret = [];
+        $files = [];
+
+        if (!file_exists($this->dir)) {
+            @mkdir($this->dir, 0777, true);
+        }
+
+        $fu = FileHelper::findFiles($this->dir, ['only' => ['*.sql']]);
+        foreach ($fu as $value) {
+            $fileName = substr(basename($value), 0, -4);
+            $files[$fileName]['createfile'] = trim(str_replace("\r", "", file_get_contents($value)));
+            $files[$fileName]['filepath'] = $value;
+        }
+
+        $list = $this->getList();
+
+        if ($this->doOnlySvn) {
+            foreach ($files as $name => $value) {
+                if (!isset($list[$name])) {
+                    continue;
+                }
+                $ret[$name] = yii\helpers\ArrayHelper::merge($value, $list[$name]);
+            }
+            foreach ($list as $name => $value) {
+                if (in_array($name, $files)) {
+                    continue;
+                }
+                unset($list[$name]);
+            }
+        }
+        else {
+            $ret = yii\helpers\ArrayHelper::merge($files, $list);
+        }
+
+        if (!empty($list) && $this->doCreate) {
+            foreach ($list as $name => $value) {
+                $ret[$name]['createdb'] = trim(str_replace("\r", "", $this->getCreate($name)));
+            }
+        }
+        $ret = $this->buildInfo($ret);
+
+        return $ret;
+    }
+
+    public function finalize(array $data): array
+    {
+        $result = [];
+        foreach ($data as $name => $value) {
+            $info = isset($value['info']) ? $value['info'] : [];
+            if (empty($info)) {
+                $info = [];
+            }
+            if (isset($value['parse']) && !empty($value['parse']) && !empty($value['parse']['text'])) {
+                $info[] = $value['parse']['text'];
+            }
+
+            $errors = isset($value['merged']['errors']) ? $value['merged']['errors'] : [];
+            $uses = isset($value['merged']['uses']) ? $value['merged']['uses'] : [];
+            $usedBy = isset($value['usedBy']) ? $value['usedBy'] : [];
+            $selects = isset($value['merged']['select']) ? $value['merged']['select'] : [];
+            $flags = isset($value['parse']) && isset($value['parse']['flags']) ? $value['parse']['flags'] : [];
+
+            if (!empty($selects)) {
+                if (count($selects) != count($value['parse']['select'])) {
+                    $value['warnings'][] = 'Select count missmatch! should be ' . count($selects) . ' but is ' . count($value['parse']['select']);
+                }
+            }
+            if (!empty($uses)) {
+                $header = '';
+                $body = '';
+                foreach ($uses as $ttype => $tval) {
+                    $header .= '<th>' . $ttype . '</th>';
+                    $body .= '<td><ul>';
+                    sort($tval);
+                    foreach ($tval as $tname) {
+                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
+                    }
+                    $body .= '</ul></td>';
+                }
+                $ret = '<h4>Uses</h4><table class="table table-sm">
+<thead class="thead-default"><tr>' . $header . '</tr></thead>
+<tbody class="tbody"><tr>' . $body . '
+ </tr></tbody>
+</table>';
+                $info[] = $ret;
+            }
+            if (!empty($usedBy)) {
+                $header = '';
+                $body = '';
+                $flags[self::FLAGS_USEDBY] = 1;
+                foreach ($usedBy as $ttype => $tval) {
+                    $header .= '<th>' . $ttype . '</th>';
+                    $body .= '<td><ul>';
+                    sort($tval);
+                    foreach ($tval as $tname) {
+                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
+                    }
+                    $body .= '</ul></td>';
+                }
+                $ret = '<h4>Used By</h4><table class="table table-sm">
+ <thead class="thead-default"><tr>' . $header . '</tr></thead>
+ <tbody class="tbody"><tr>' . $body . '
+     </tr></tbody>
+   </table>';
+                $info[] = $ret;
+            }
+            if (!empty($errors)) {
+                $body = '';
+                foreach ($errors as $error) {
+                    $body .= '<tr' . (!empty($error['warnings']) ? ' class="alert alert-danger"' : '') . '><td>' . $error['name'] . '</td><td>' . $error['value'] . '</td><td>' . $error['message'] . '</td><td>';
+                    $list = '';
+                    foreach ($error['uses'] as $ttype => $tval) {
+                        $slist = '';
+                        foreach ($tval as $tname) {
+                            if ($tname == $name) {
+                                continue;
+                            }
+                            $slist .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
+                        }
+                        $list .= empty($slist) ? '' : '<li>' . $ttype . '</li><ul>' . $slist . '</ul>';
+                    }
+                    $body .= (empty($list)) ? '&nbsp;' : '<ul>' . $list . '</ul>';
+                    $body .= '</td><td>' . implode('<br>', $error['warnings']) . '</td></tr>';
+                }
+                $ret = '<h4>Errors</h4>
+<table class="table table-sm">
+<thead class="thead-default">
+<tr><th>Name</th><th>Value</th><th>Description</th><th>In</th><th>Warning</th></tr>
+</thead>
+<tbody class="tbody">' . $body . '
+ </tbody>
+</table>';
+                $info[] = $ret;
+            }
+
+            $result[$name]['createdb'] = (isset($value['createdb']) ? $value['createdb'] : '');
+            $result[$name]['createfile'] = (isset($value['createfile']) ? $value['createfile'] : '');
+            $result[$name]['info'] = trim(implode('', $info));
+            $result[$name]['filepath'] = (isset($value['filepath']) ? $value['filepath'] : '');
+            $result[$name]['flags'] = $flags;
+            if (isset($value['warnings']) && !empty($value['warnings'])) {
+                $result[$name]['warnings'] = '<ul><li>' . implode('</li><li>', $value['warnings']) . '</li></ul>';
+            }
+            else {
+                $result[$name]['warnings'] = '';
+            }
+        }
+
+        return $result;
+    }
+
+    public function findUses(array $data, array $search4uses): array
+    {
+        $result = $data;
+        foreach ($data as $name => $value) {
+            if (!isset($value['body'])) {
+                continue;
+            }
+            $result[$name]['uses'] = self::findUsesFor($value['body'], $name, $search4uses);
+        }
+
+        return $result;
+    }
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Public STATIC
+    #-------------------------------------------------------------------------------------------------------------------
+    public static function isRemoved(string $content): bool
+    {
+        if (empty($content)) {
+            return false;
+        }
+
+        return (substr($content, 0, strlen(self::REMOVED_FILE_CONTENT)) == self::REMOVED_FILE_CONTENT);
+    }
+
+    public static function mergeData(array $data): array
+    {
+        foreach ($data as $type => $list) {
+            foreach ($list as $name => $value) {
+                self::mergeUses($type, $name, $data);
+            }
+        }
+
+        return $data;
+    }
+
+    public static function setUsedBy(array $data): array
+    {
+        foreach ($data as $type => $list) {
+            foreach ($list as $name => $value) {
+                if (empty($value['uses'])) {
+                    continue;
+                }
+                foreach ($value['uses'] as $ctype => $cval) {
+                    foreach ($cval as $cname) {
+                        $data[$ctype][$cname]['usedBy'][$type][] = $name;
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    public static function getStatus(string $createFile, string $createDb): string
+    {
+        if (empty($createFile) && empty($createDb)) {
+            return '';
+        }
+
+        if (self::isRemoved($createFile)) {
+            return 'removed';
+        }
+        if ($createDb == $createFile) {
+            return 'ok';
+        }
+
+        if (empty($createDb)) {
+            return 'missing';
+        }
+
+        if (empty($createFile)) {
+            return 'new';
+        }
+
+        return 'different';
+    }
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Protected
+    #-------------------------------------------------------------------------------------------------------------------
+
+    protected function getDbName(): string
     {
         $key = $this->db->dsn;
         if (isset(self::$databases[$key])) {
@@ -58,72 +385,59 @@ class DbSchemaBase
         return self::$databases[$key];
     }
 
-    public function info()
-	{
-		$ret = [];
-		$files = [];
+    protected function getBriefContent(array $data): string
+    {
+        return isset($data['body']) ? $data['body'] : '';
+    }
 
-		if(!file_exists($this->dir)) {
-            @mkdir($this->dir, 0777,true);
-        }
+    protected function getDeclaresContent(array $data): string
+    {
+        return $this->getBriefContent($data);
+    }
 
+    #-------------------------------------------------------------------------------------------------------------------
+    # Protected IF
+    #-------------------------------------------------------------------------------------------------------------------
 
-		$fu = FileHelper::findFiles($this->dir, ['only' => ['*.sql']]);
-		foreach ($fu as $value)
-		{
-			$fileName = substr(basename($value), 0, -4);
-            $files[$fileName]['createfile'] = trim(str_replace("\r", "", file_get_contents($value)));
-			$files[$fileName]['filepath'] = $value;
-		}
-
-		$list = $this->getList();
-
-		if($this->doOnlySvn) {
-			foreach ($files as $name => $value) {
-				if(!isset($list[$name])) continue;
-				$ret[$name] = yii\helpers\ArrayHelper::merge($value, $list[$name]);
-			}
-			foreach ($list as $name => $value) {
-				if(in_array($name,$files)) continue;
-				unset($list[$name]);
-			}
-		} else {
-			$ret = yii\helpers\ArrayHelper::merge($files, $list);
-		}
-
-		if (!empty($list) && $this->doCreate)
-		{
-			foreach ($list as $name => $value)
-			{
-                $ret[$name]['createdb'] = trim(str_replace("\r", "", $this->getCreate($name)));
-			}
-		}
-		$ret = $this->buildInfo($ret);
-
-		return $ret;
-	}
-
-	public function getList()
-	{
-		throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
-	}
-
-	public function getCreate($name)
-	{
-		throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
-	}
-
-    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+    protected function getList(): array
+    {
         throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
     }
 
-	public function buildInfo($data)
-	{
-		$ret = $data;
-		foreach ($data as $name => $value)
-		{
-		    try {
-                $ret[$name]['parse'] = $this->_doInfo($value);
+    protected function getCreate(string $name): string
+    {
+        throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
+    }
+
+    protected function doAdditionalInfo(array $data, array &$brief, array &$ret): void
+    {
+        throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
+    }
+
+    protected function sqlDrop(string $name): string
+    {
+        throw new \Exception('needs to be implemented: ' . __FUNCTION__, 500);
+    }
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Protected STATIC
+    #-------------------------------------------------------------------------------------------------------------------
+
+    protected static function getLink(string $db, string $group, string $name): string
+    {
+        return '<button type="button" class="btn btn-link" onclick="selectItem(\'' . $db . '|' . $group . '|' . $name . '\');">' . $name . '</button>';
+    }
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Private
+    #-------------------------------------------------------------------------------------------------------------------
+
+    private function buildInfo(array $data): array
+    {
+        $ret = $data;
+        foreach ($data as $name => $value) {
+            try {
+                $ret[$name]['parse'] = $this->doInfo($value);
                 if (isset($ret[$name]['parse']['warnings'])) {
                     $ret[$name]['warnings'] = $ret[$name]['parse']['warnings'];
                     unset($ret[$name]['parse']['warnings']);
@@ -132,24 +446,17 @@ class DbSchemaBase
                     $ret[$name]['body'] = $ret[$name]['parse']['body'];
                     unset($ret[$name]['parse']['body']);
                 }
-            } catch (\Throwable $e) {
-		        $msg = 'class('.get_called_class().') name('.$name.') msg('.$e->getMessage().')';
-		        throw new \Exception($msg,DbValues::eError_General_Error,$e);
             }
-		}
+            catch (\Throwable $e) {
+                $msg = 'class(' . get_called_class() . ') name(' . $name . ') msg(' . $e->getMessage() . ')';
+                throw new \Exception($msg, DbValues::eError_General_Error, $e);
+            }
+        }
 
-		return $ret;
-	}
-
-    protected function getBriefContent(array $data): string {
-        return isset($data['body']) ? $data['body'] : '';
+        return $ret;
     }
 
-    protected function getDeclaresContent(array $data): string {
-        return $this->getBriefContent($data);
-    }
-
-    protected function _doInfo($data)
+    private function doInfo(array $data): array
     {
         $ret = [
             'text'     => [],
@@ -178,29 +485,28 @@ class DbSchemaBase
         $ret['flags'] = $brief['flags'];
         unset($brief['flags']);
 
-        $this->_doAdditionalInfo($data, $brief, $ret);
+        $this->doAdditionalInfo($data, $brief, $ret);
 
         if (isset($brief['param'])) {
             unset($brief['param']);
         }
-        $additionalInfo=[];
+        $additionalInfo = [];
         if (isset($brief['additionalInfo'])) {
-            $additionalInfo=$brief['additionalInfo'];
+            $additionalInfo = $brief['additionalInfo'];
             unset($brief['additionalInfo']);
         }
 
-        $info=$brief['info'];
+        $info = $brief['info'];
         unset($brief['info']);
 
-        if(!empty($brief))
-        {
-            throw new \Exception('forgot to process: brief:' . print_r($brief,true).' data:'.print_r($data,true));
+        if (!empty($brief)) {
+            throw new \Exception('forgot to process: brief:' . print_r($brief, true) . ' data:' . print_r($data, true));
         }
 
         #do html formating
-        if($this->doFormat) {
+        if ($this->doFormat) {
 
-            $text=[];
+            $text = [];
 
             if (!empty($info[$key = 'deprecated'])) {
                 $text[] = '
@@ -270,265 +576,97 @@ class DbSchemaBase
                 $text[] = $a;
             }
 
-            $ret['text'] = implode('<br>',$text);
+            $ret['text'] = implode('<br>', $text);
         }
 
         return $ret;
     }
 
-	public function findUses($data, $search4uses)
-	{
-		$result = $data;
-		foreach ($data as $name => $value)
-		{
-			if (!isset($value['body']))
-			{
-				continue;
-			}
-			$result[$name]['uses'] = self::findUsesFor($value['body'], $name, $search4uses);
-		}
-
-		return $result;
-	}
-
-	public function finalize($data)
-	{
-		$result = [];
-		foreach ($data as $name => $value)
-		{
-			$info = isset($value['info']) ? $value['info'] : [];
-			if (empty($info))
-			{
-				$info = [];
-			}
-			if (isset($value['parse']) && !empty($value['parse']) && !empty($value['parse']['text']))
-			{
-				$info[] = $value['parse']['text'];
-			}
-
-            $errors = isset($value['merged']['errors'])?$value['merged']['errors']:[];
-            $uses = isset($value['merged']['uses'])?$value['merged']['uses']:[];
-            $usedBy = isset($value['usedBy'])?$value['usedBy']:[];
-            $selects = isset($value['merged']['select'])?$value['merged']['select']:[];
-            $flags = isset($value['parse']) && isset($value['parse']['flags']) ? $value['parse']['flags'] : [];
-
-            if (!empty($selects))
-            {
-                if (count($selects) != count($value['parse']['select']))
-                {
-                    $value['warnings'][] = 'Select count missmatch! should be ' . count($selects) . ' but is ' . count($value['parse']['select']);
-                }
-            }
-            if (!empty($uses))
-            {
-                $header = '';
-                $body = '';
-                foreach ($uses as $ttype => $tval)
-                {
-                    $header .= '<th>' . $ttype . '</th>';
-                    $body .= '<td><ul>';
-                    sort($tval);
-                    foreach ($tval as $tname)
-                    {
-                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
-                    }
-                    $body .= '</ul></td>';
-                }
-                $ret = '<h4>Uses</h4><table class="table table-sm">
-<thead class="thead-default"><tr>' . $header . '</tr></thead>
-<tbody class="tbody"><tr>' . $body . '
- </tr></tbody>
-</table>';
-                $info[] = $ret;
-            }
-            if (!empty($usedBy))
-            {
-                $header = '';
-                $body = '';
-                $flags[self::FLAGS_USEDBY] = 1;
-                foreach ($usedBy as $ttype => $tval)
-                {
-                    $header .= '<th>' . $ttype . '</th>';
-                    $body .= '<td><ul>';
-                    sort($tval);
-                    foreach ($tval as $tname)
-                    {
-                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
-                    }
-                    $body .= '</ul></td>';
-                }
-                $ret = '<h4>Used By</h4><table class="table table-sm">
- <thead class="thead-default"><tr>' . $header . '</tr></thead>
- <tbody class="tbody"><tr>' . $body . '
-     </tr></tbody>
-   </table>';
-                $info[] = $ret;
-            }
-            if (!empty($errors))
-            {
-                $body = '';
-                foreach ($errors as $error)
-                {
-                    $body .= '<tr' . (!empty($error['warnings']) ? ' class="alert alert-danger"' : '') . '><td>' . $error['name'] . '</td><td>' . $error['value'] . '</td><td>' . $error['message'] . '</td><td>';
-                    $list = '';
-                    foreach ($error['uses'] as $ttype => $tval)
-                    {
-                        $slist = '';
-                        foreach ($tval as $tname)
-                        {
-                            if ($tname == $name)
-                            {
-                                continue;
-                            }
-                            $slist .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
-                        }
-                        $list .= empty($slist) ? '' : '<li>' . $ttype . '</li><ul>' . $slist . '</ul>';
-                    }
-                    $body .= (empty($list)) ? '&nbsp;' : '<ul>' . $list . '</ul>';
-                    $body .= '</td><td>' . implode('<br>',$error['warnings']) . '</td></tr>';
-                }
-                $ret = '<h4>Errors</h4>
-<table class="table table-sm">
-<thead class="thead-default">
-<tr><th>Name</th><th>Value</th><th>Description</th><th>In</th><th>Warning</th></tr>
-</thead>
-<tbody class="tbody">' . $body . '
- </tbody>
-</table>';
-                $info[] = $ret;
-            }
-
-			$result[$name]['createdb'] = (isset($value['createdb']) ? $value['createdb'] : '');
-			$result[$name]['createfile'] = (isset($value['createfile']) ? $value['createfile'] : '');
-			$result[$name]['info'] = trim(implode('', $info));
-            $result[$name]['filepath'] = (isset($value['filepath']) ? $value['filepath'] : '');
-            $result[$name]['flags'] = $flags;
-			if (isset($value['warnings']) && !empty($value['warnings']))
-			{
-				$result[$name]['warnings'] = '<ul><li>' . implode('</li><li>', $value['warnings']) . '</li></ul>';
-			}
-			else
-			{
-				$result[$name]['warnings'] = '';
-			}
-		}
-
-		return $result;
-	}
-
-    public function sql2file($name): array
+    private function doDrop(string $name): void
     {
-        $create = $this->getCreate($name);
-        if (!$create) {
-            throw new \Exception('getCreate failed', 500);
-        }
-        $filepath = $this->dir . '/' . $name . '.sql';
-        if (file_put_contents($filepath, $create) === false) {
-            throw new \Exception('failed to write file: ' . $name, 500);
-        }
-
-        return ['createdb'   => $create,
-                'createfile' => $create,
-                'status'     => 'ok',
-        ];
+        $sql = $this->sqlDrop($name);
+        $this->executeSql($sql);
     }
 
-    public function file2sql($name): array
+    private function findUsesFor(string $body, string $name, array $search4uses): array
     {
-        $filepath = $this->dir . '/' . $name . '.sql';
-
-        if(!file_exists($filepath)) {
-            throw new \Exception('file does not exist');
+        $ret = [];
+        $body = self::removeComments($body);
+        $body = trim(str_replace("\t", " ", $body));
+        if (empty($body)) {
+            return $ret;
         }
-        $data = file_get_contents($filepath);
-        if(empty($data)) {
-            throw new \Exception('empty data');
+        foreach ($search4uses as $find => $type) {
+            if ($find == $name) {
+                continue;
+            }
+            if (self::inBody($body, $find)) {
+                $ret[$type][] = $find;
+            }
         }
 
-        $this->executeSql($data);
-
-        return ['createdb'   => $data,
-                'createfile' => $data,
-                'status'     => 'ok',
-        ];
+        return $ret;
     }
 
-    public function markAsRemoved(string $name, bool $drop) : array
+    private function executeSql(string $data): void
     {
-        $hDb = '
-###############################################################################
-# DB
-###############################################################################
-';
-        $hFile = '
-###############################################################################
-# FILE
-###############################################################################
-';
+        if (empty($data)) {
+            return;
+        }
+        $data = str_replace("\r", '', $data);
+        $sqls = array_filter(explode(DbToolsModule::getInstance()->exportDelimiter, $data), 'strlen');
 
-        $filepath = $this->dir . '/' . $name . '.sql';
-
-        $createDb = '';
-        $createFile='';
+        $transaction = $this->db->beginTransaction();
         try {
-            $createDb = $this->getCreate($name);
-        } catch (\Throwable $e) {
-            $createDb = '';
+            foreach ($sqls as $sql) {
+                $sql = trim($sql);
+                if (strtoupper(substr($sql, 0, 9)) == 'DELIMITER' || strtoupper(substr($sql, 0, 4)) == 'USE ') {
+                    continue;
+                }
+                $this->db->createCommand($sql)->execute();
+            }
+            $transaction->commit();
         }
+        catch (\Exception $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+    }
+
+    private function filepath(string $name): string
+    {
+        return $this->dir . '/' . $name . '.sql';
+    }
+
+    private function getFileContent(string $name): string
+    {
+        $filepath = $this->filepath($name);
+
+        if (!file_exists($filepath)) {
+            return '';
+        }
+
+        return file_get_contents($filepath);
+    }
+
+    private function setFileContent(string $name, string $content): void
+    {
+        $filepath = $this->filepath($name);
 
         if (file_exists($filepath)) {
-            $createFile = file_get_contents($filepath);
             unlink($filepath);
-            //prev marked as removed --- grep old file content
-            if(self::isRemoved($createFile)) {
-                $filepos = strpos($createFile,$hFile);
-                if($filepos === false) {
-                    $createFile = ''; //can not parse old data
-                } else {
-                    $createFile = substr($createFile,$filepos+strlen($hFile));
-                }
-            }
-        }
-
-        $content = self::REMOVED_FILE_CONTENT;
-
-        if(!empty($createDb)) {
-            $content.= $hDb.$createDb;
-        }
-        if(!empty($createFile)) {
-            $content.= $hFile.$createFile;
         }
 
         if (file_put_contents($filepath, $content) === false) {
             throw new \Exception('failed to write file: ' . $name, 500);
         }
-
-        if($drop) {
-            $this->drop($name);
-        }
-
-        return ['createdb'   => '',
-                'createfile' => $content,
-                'status'     => 'removed',
-        ];
     }
 
-    public static function isRemoved(string $content) : bool {
-	    if(empty($content)) return false;
-        return (substr($content,0,strlen(self::REMOVED_FILE_CONTENT)) == self::REMOVED_FILE_CONTENT);
-    }
+    #-------------------------------------------------------------------------------------------------------------------
+    # Private STATIC
+    #-------------------------------------------------------------------------------------------------------------------
 
-    public function drop($name)
-    {
-        throw new \Exception('not allowed');
-    }
-
-	public static function getLink($db, $group, $name)
-	{
-		return '<button type="button" class="btn btn-link" onclick="selectItem(\'' . $db . '|' . $group . '|' . $name . '\');">' . $name . '</button>';
-	}
-
-    private static function brief2array($info)
+    private static function brief2array(string $info): array
     {
         $ret = [];
         $info = str_replace("\t", " ", $info);
@@ -559,12 +697,12 @@ class DbSchemaBase
             '/todo'       => 'todo',
             '@deprecated' => 'deprecated',
             '/deprecated' => 'deprecated',
-            '@legacy' => 'legacy',
-            '/legacy' => 'legacy',
-            '@devel' => 'devel',
-            '/devel' => 'devel',
-            '@constant' => 'constant',
-            '/constant' => 'constant',
+            '@legacy'     => 'legacy',
+            '/legacy'     => 'legacy',
+            '@devel'      => 'devel',
+            '/devel'      => 'devel',
+            '@constant'   => 'constant',
+            '/constant'   => 'constant',
         ];
         $current = [];
         foreach ($infos as $row) {
@@ -593,17 +731,21 @@ class DbSchemaBase
             $ret[$currentcat][] = $current;
             $currentcat = 'unknown';
             $current[] = $row;
-            $msg = 'Unknown Brief Type! row:'.$row.' info:'.$info;
+            $msg = 'Unknown Brief Type! row:' . $row . ' info:' . $info;
             throw new \Exception($msg);
         }
         if (!empty($current)) {
             $ret[$currentcat][] = $current;
         }
+
         return $ret;
     }
-    private static function brief2text($key,&$in, &$out)
+
+    private static function brief2text(string $key, array &$in, array &$out): bool
     {
-        if (!isset($in[$key]) || empty($in[$key])) return false;
+        if (!isset($in[$key]) || empty($in[$key])) {
+            return false;
+        }
 
         $pret = '';
         foreach ($in[$key] as $bdata) {
@@ -615,11 +757,15 @@ class DbSchemaBase
         unset($in[$key]);
 
         $out[$key] = $pret;
+
         return true;
     }
-    private static function brief2list($key,&$in, &$out)
+
+    private static function brief2list(string $key, array &$in, array &$out): bool
     {
-        if (!isset($in[$key]) || empty($in[$key])) return false;
+        if (!isset($in[$key]) || empty($in[$key])) {
+            return false;
+        }
 
         $pret = [];
         foreach ($in[$key] as $bdata) {
@@ -636,84 +782,86 @@ class DbSchemaBase
         unset($in[$key]);
 
         $out[$key] = $pret;
+
         return true;
     }
 
-    public static function parseBrief(string $content) : array
+    private static function parseBrief(string $content): array
     {
         $ret = [
             'info'     => [],
-            'param'     => [],
-            'select' => [],
-            'export' => [],
+            'param'    => [],
+            'select'   => [],
+            'export'   => [],
             'warnings' => [],
-            'flags' => [],
+            'flags'    => [],
         ];
 
         $data = self::getBetween($content, '/**', '*/');
-        if(empty($data)) return $ret;
+        if (empty($data)) {
+            return $ret;
+        }
 
         $in = self::brief2array(array_shift($data));
 
-        $out=[];
+        $out = [];
 
         //----------------------------------------------------------------------------------------------
         // To Text
         //----------------------------------------------------------------------------------------------
-        if(self::brief2text($key='deprecated',$in,$out))
-        {
+        if (self::brief2text($key = 'deprecated', $in, $out)) {
             $ret['warnings'][] = 'deprecated';
-            $ret['flags'][self::FLAGS_DEPRECATED]=1;
-            if(empty($out[$key])) {
-                $ret['info'][$key][]='deprecated';
-            } else {
-                $ret['info'][$key][]=$out[$key];
+            $ret['flags'][self::FLAGS_DEPRECATED] = 1;
+            if (empty($out[$key])) {
+                $ret['info'][$key][] = 'deprecated';
+            }
+            else {
+                $ret['info'][$key][] = $out[$key];
             }
         }
 
-        if(self::brief2text($key='legacy',$in,$out))
-        {
-            $ret['flags'][self::FLAGS_LEGACY]=1;
-            if(empty($out[$key])) {
-                $ret['info'][$key][]='legacy';
-            } else {
-                $ret['info'][$key][]=$out[$key];
+        if (self::brief2text($key = 'legacy', $in, $out)) {
+            $ret['flags'][self::FLAGS_LEGACY] = 1;
+            if (empty($out[$key])) {
+                $ret['info'][$key][] = 'legacy';
+            }
+            else {
+                $ret['info'][$key][] = $out[$key];
             }
         }
 
-        if(self::brief2text($key='devel',$in,$out))
-        {
+        if (self::brief2text($key = 'devel', $in, $out)) {
             $ret['warnings'][] = 'devel';
-            $ret['flags'][self::FLAGS_DEVEL]=1;
-            if(empty($out[$key])) {
-                $ret['info'][$key][]='devel';
-            } else {
-                $ret['info'][$key][]=$out[$key];
+            $ret['flags'][self::FLAGS_DEVEL] = 1;
+            if (empty($out[$key])) {
+                $ret['info'][$key][] = 'devel';
+            }
+            else {
+                $ret['info'][$key][] = $out[$key];
             }
         }
 
-        if(self::brief2list($key='todo',$in,$out)) {
-            $ret['flags'][self::FLAGS_TODO]=1;
-            $ret['info'][$key]=$out[$key];
+        if (self::brief2list($key = 'todo', $in, $out)) {
+            $ret['flags'][self::FLAGS_TODO] = 1;
+            $ret['info'][$key] = $out[$key];
         }
 
-        if(self::brief2text($key='brief',$in,$out))
-        {
-            $ret['info'][$key][]=$out[$key];
+        if (self::brief2text($key = 'brief', $in, $out)) {
+            $ret['info'][$key][] = $out[$key];
         }
 
-        if(self::brief2list($key='note',$in,$out)) {
-            $ret['info'][$key]=$out[$key];
+        if (self::brief2list($key = 'note', $in, $out)) {
+            $ret['info'][$key] = $out[$key];
         }
 
         //cache select and set auto export!
         if (isset($in['export'])) {
-            $ret['flags'][self::FLAGS_EXPORT]=1;
+            $ret['flags'][self::FLAGS_EXPORT] = 1;
             $ret['export'][] = 'export'; #todo maybe use export types like PHP, CPP
         }
 
         if (isset($in['select'])) {
-            $ret['flags'][self::FLAGS_SELECT]=1;
+            $ret['flags'][self::FLAGS_SELECT] = 1;
             if (!isset($in['export'])) {
                 $in['export'][] = '';
             }
@@ -727,23 +875,20 @@ class DbSchemaBase
             }
         }
 
-        if(self::brief2text($key='export',$in,$out))
-        {
-            if(empty($out[$key])) {
-                $out[$key]='export';
+        if (self::brief2text($key = 'export', $in, $out)) {
+            if (empty($out[$key])) {
+                $out[$key] = 'export';
             }
 
-            $ret['info'][$key][]=$out[$key];
+            $ret['info'][$key][] = $out[$key];
         }
 
-        if(self::brief2list($key='select',$in,$out)) {
-            $ret['info'][$key]=$out[$key];
+        if (self::brief2list($key = 'select', $in, $out)) {
+            $ret['info'][$key] = $out[$key];
         }
 
-
-        if(self::brief2text($key='return',$in,$out))
-        {
-            $ret['info'][$key][]=$out[$key];
+        if (self::brief2text($key = 'return', $in, $out)) {
+            $ret['info'][$key][] = $out[$key];
         }
 
         if (isset($in['param'])) {
@@ -763,94 +908,103 @@ class DbSchemaBase
 
         //cache select and set auto export!
         if (isset($in['constant'])) {
-            $ret['flags'][self::FLAGS_CONSTANT]=1;
+            $ret['flags'][self::FLAGS_CONSTANT] = 1;
             unset($in['constant']);
         }
 
-        if(!empty($in)) {
-            throw new \Exception("forgot to process:\nin:".print_r($in,true)."\nret:".print_r($ret,true));
+        if (!empty($in)) {
+            throw new \Exception("forgot to process:\nin:" . print_r($in, true) . "\nret:" . print_r($ret, true));
         }
 
         return $ret;
     }
 
-    public static function checkHandler($dec)
+    private static function checkHandler($dec): array
     {
         $s = array_values(array_filter(explode(' ', $dec), 'strlen'));
-        if(!isset($s[3]) || strtoupper($s[1])!="HANDLER") return [];
+        if (!isset($s[3]) || strtoupper($s[1]) != "HANDLER") {
+            return [];
+        }
 
         $ret['type'] = strtoupper($s[0]);
-        $ret['condition']=[];
+        $ret['condition'] = [];
 
         unset($s[0]); // Type
         unset($s[1]); // HANDLER
         unset($s[2]); // FOR
 
-        foreach($s as $p) {
+        foreach ($s as $p) {
             $p = trim($p);
-            if(strtoupper($p)=='BEGIN') break;
+            if (strtoupper($p) == 'BEGIN') {
+                break;
+            }
 
-            $ret['condition'][]=$p;
+            $ret['condition'][] = $p;
         }
-        if(!empty($ret['condition']))
-        {
-            $ret['condition'] = implode(' ',$ret['condition']);
+        if (!empty($ret['condition'])) {
+            $ret['condition'] = implode(' ', $ret['condition']);
         }
 
         return $ret;
     }
 
-	public static function splitDeclare($dec)
-	{
-		$s = array_filter(explode(' ', $dec), 'strlen');
-		//var_dump($s);
+    private static function splitDeclare(string $dec): array
+    {
+        $s = array_filter(explode(' ', $dec), 'strlen');
+        //var_dump($s);
 
-		$ret=['name'=>'',
-			  'type'=>[],
-			  'value'=>[],];
+        $ret = [
+            'name'  => '',
+            'type'  => [],
+            'value' => [],
+        ];
 
-		$next = 'name';
-		foreach($s as $p) {
-			switch ($next)
-			{
-				case 'name':
-					$ret['name'] = trim($p);
-					$next = 'type';
-					break;
-				case 'type':
-					if(strtoupper($p) == 'DEFAULT') {
-						$next = 'value';
-					} else {
-						$ret['type'][] = trim($p);
-					}
-					break;
-				case 'value':
-					$ret['value'][] = trim($p);
-					break;
-				default:
-				    throw new \Exception('unknown declare-next:'.print_r($dec,true));
-			}
-		}
-		$ret['type'] = trim(strtoupper(implode(' ',$ret['type'])));
-		if(empty($ret['value'])) {
-			$ret['value'] = 'NULL';
-		} else {
-			$ret['value'] = trim(implode(' ',$ret['value']));
-		}
-		return $ret;
-	}
+        $next = 'name';
+        foreach ($s as $p) {
+            switch ($next) {
+                case 'name':
+                    $ret['name'] = trim($p);
+                    $next = 'type';
+                    break;
+                case 'type':
+                    if (strtoupper($p) == 'DEFAULT') {
+                        $next = 'value';
+                    }
+                    else {
+                        $ret['type'][] = trim($p);
+                    }
+                    break;
+                case 'value':
+                    $ret['value'][] = trim($p);
+                    break;
+                default:
+                    throw new \Exception('unknown declare-next:' . print_r($dec, true));
+            }
+        }
+        $ret['type'] = trim(strtoupper(implode(' ', $ret['type'])));
+        if (empty($ret['value'])) {
+            $ret['value'] = 'NULL';
+        }
+        else {
+            $ret['value'] = trim(implode(' ', $ret['value']));
+        }
 
-    public static function parseDeclares($body)
+        return $ret;
+    }
+
+    private static function parseDeclares(string $body): array
     {
         $ret = [
-            'member'  => [],
-            'error'   => [],
-            'const'   => [],
-            'unknown' => [],
-            'handler' => [],
+            'member'   => [],
+            'error'    => [],
+            'const'    => [],
+            'unknown'  => [],
+            'handler'  => [],
             'warnings' => [],
         ];
-        if(empty($body)) return $ret;
+        if (empty($body)) {
+            return $ret;
+        }
 
         $body = self::removeComments($body);
         $body = trim(str_replace("\t", " ", $body));
@@ -941,22 +1095,52 @@ class DbSchemaBase
             }
         }
 
-		return $ret;
-	}
+        return $ret;
+    }
 
     private static function inBody(string $body, string $find, int $startPos = 0): bool
     {
-        if(empty($body) || empty($find)) return false;
-        $arrPrevchar = [' ', '(', ')', '`', '\'', '"', '.', ',', ';', '=', "\n", "\r", "\t"];
-        $arrNextchar = [' ', '(', ')', '`', '\'', '"', '.', ',', ';', '=', "\n", "\r", "\t"];
+        if (empty($body) || empty($find)) {
+            return false;
+        }
+        $arrPrevchar = [
+            ' ',
+            '(',
+            ')',
+            '`',
+            '\'',
+            '"',
+            '.',
+            ',',
+            ';',
+            '=',
+            "\n",
+            "\r",
+            "\t",
+        ];
+        $arrNextchar = [
+            ' ',
+            '(',
+            ')',
+            '`',
+            '\'',
+            '"',
+            '.',
+            ',',
+            ';',
+            '=',
+            "\n",
+            "\r",
+            "\t",
+        ];
         $pos = $startPos;
 
         while ($pos < strlen($body) && $pos = strpos($body, $find, $pos)) {
-            $prevchar = substr($body, $pos-1, 1);
+            $prevchar = substr($body, $pos - 1, 1);
             $pos += strlen($find);
             $nextchar = substr($body, $pos, 1);
             $pos += 1;
-            if(in_array($prevchar,$arrPrevchar) && in_array($nextchar,$arrNextchar)) {
+            if (in_array($prevchar, $arrPrevchar) && in_array($nextchar, $arrNextchar)) {
                 return true;
             }
         }
@@ -964,58 +1148,9 @@ class DbSchemaBase
         return false;
     }
 
-	public static function findUsesFor($body, $name, $search4uses)
-	{
-		$ret = [];
-		$body = self::removeComments($body);
-		$body = trim(str_replace("\t", " ", $body));
-		if (empty($body))
-		{
-			return $ret;
-		}
-		foreach ($search4uses as $find => $type)
-		{
-			if ($find == $name)
-			{
-				continue;
-			}
-			if(self::inBody($body, $find)) {
-                $ret[$type][] = $find;
-            }
-		}
-
-		return $ret;
-	}
-/*
-	public static function getBetween($content, $start, $end)
-	{
-		if (empty($content))
-		{
-			return [];
-		}
-		$r = explode($start, $content);
-		if (isset($r[1]))
-		{
-			array_shift($r);
-			$help_fun = function ($arr) use ($end)
-			{
-				$r = explode($end, $arr);
-
-				return $r[0];
-			};
-			$r = array_map($help_fun, $r);
-
-			return $r;
-		}
-		else
-		{
-			return [];
-		}
-	}
-*/
-    public static function getBetween($str, $startDelimiter, $endDelimiter) {
-        if (empty($str) || empty($startDelimiter) || empty($endDelimiter))
-        {
+    private static function getBetween(string $str, string $startDelimiter, string $endDelimiter): array
+    {
+        if (empty($str) || empty($startDelimiter) || empty($endDelimiter)) {
             return [];
         }
         $contents = [];
@@ -1035,192 +1170,110 @@ class DbSchemaBase
         return $contents;
     }
 
-    public static function mergeData($data)
+    private static function mergeUses(string $type, string $name, array &$infos): bool
     {
-        foreach ($data as $type => $list)
-        {
-            foreach ($list as $name => $value)
-            {
-                self::mergeUses($type, $name, $data);
+        if (empty($name)) {
+            return false;
+        }
+        if (isset($infos[$type]) && isset($infos[$type][$name]) && isset($infos[$type][$name]['merged'])) {
+            return false;
+        }
+        if (!isset($infos[$type][$name])) {
+            return false;
+        }
+        $infos[$type][$name]['merged']['errors'] = [];
+        $infos[$type][$name]['merged']['uses'] = [];
+        $infos[$type][$name]['merged']['select'] = [];
+
+        if (isset($infos[$type][$name]['parse'])) {
+            if (isset($infos[$type][$name]['parse']['select']) && !empty($infos[$type][$name]['parse']['select'])) {
+                $infos[$type][$name]['merged']['select'] = $infos[$type][$name]['parse']['select'];
+            }
+            if (isset($infos[$type][$name]['parse']['declares']['error']) && !empty($infos[$type][$name]['parse']['declares']['error'])) {
+                $infos[$type][$name]['merged']['errors'] = $infos[$type][$name]['parse']['declares']['error'];
+                foreach ($infos[$type][$name]['merged']['errors'] as $id => $cval) {
+                    $infos[$type][$name]['merged']['errors'][$id]['uses'][$type][] = $name;
+                }
             }
         }
+        //$bDump = ($name=='GlobBook');
+        //if($bDump) var_dump($infos[$type][$name]['merged']);
+        if (isset($infos[$type][$name]['uses']) && !empty($infos[$type][$name]['uses'])) {
+            $infos[$type][$name]['merged']['uses'] = $infos[$type][$name]['uses'];
+            foreach ($infos[$type][$name]['uses'] as $ctype => $cval) {
+                foreach ($cval as $cname) {
+                    $tret = self::mergeUses($ctype, $cname, $infos);
+                    if (empty($tret)) {
+                        continue;
+                    }
 
-        return $data;
-    }
-
-    public static function setUsedBy($data)
-    {
-        foreach ($data as $type => $list)
-        {
-            foreach ($list as $name => $value)
-            {
-                if(empty($value['uses'])) continue;
-                foreach ($value['uses'] as $ctype => $cval) {
-                    foreach ($cval as $cname) {
-                        $data[$ctype][$cname]['usedBy'][$type][] = $name;
+                    if (!empty($infos[$ctype][$cname]['merged']['select'])) {
+                        if (empty($infos[$type][$name]['merged']['select'])) {
+                            $infos[$type][$name]['merged']['select'] = $infos[$ctype][$cname]['merged']['select'];
+                        }
+                        else {
+                            foreach ($infos[$ctype][$cname]['merged']['select'] as $mname) {
+                                if (in_array($mname, $infos[$type][$name]['merged']['select'])) {
+                                    continue;
+                                }
+                                $infos[$type][$name]['merged']['select'][] = $mname;
+                            }
+                        }
+                    }
+                    if (!empty($infos[$ctype][$cname]['merged']['errors'])) {
+                        foreach ($infos[$ctype][$cname]['merged']['errors'] as $mval) {
+                            $found = false;
+                            foreach ($infos[$type][$name]['merged']['errors'] as $oid => $oval) {
+                                if ($mval['name'] == $oval['name'] && $mval['value'] == $oval['value']) {
+                                    foreach ($mval['uses'] as $mtype => $mcval) {
+                                        if (!isset($infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype])) {
+                                            $infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype] = $mcval;
+                                        }
+                                        else {
+                                            foreach ($mcval as $mname) {
+                                                if (in_array($mname, $infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype])) {
+                                                    continue;
+                                                }
+                                                $infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype][] = $mname;
+                                            }
+                                        }
+                                    }
+                                    $found = true;
+                                    break;
+                                }
+                            }
+                            if (!$found) {
+                                $infos[$type][$name]['merged']['errors'][] = $mval;
+                            }
+                        }
+                    }
+                    if (!empty($infos[$ctype][$cname]['merged']['uses'])) {
+                        foreach ($infos[$ctype][$cname]['merged']['uses'] as $mtype => $mval) {
+                            if (!isset($infos[$type][$name]['merged']['uses'][$mtype])) {
+                                $infos[$type][$name]['merged']['uses'][$mtype] = $mval;
+                            }
+                            else {
+                                foreach ($mval as $mname) {
+                                    if (in_array($mname, $infos[$type][$name]['merged']['uses'][$mtype])) {
+                                        continue;
+                                    }
+                                    $infos[$type][$name]['merged']['uses'][$mtype][] = $mname;
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        return $data;
+        //if($bDump) {var_dump($infos[$type][$name]['merged']); die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);}
+        return true;
     }
 
-	public static function mergeUses($type, $name, &$infos)
-	{
-		if (empty($name))
-		{
-			return NULL;
-		}
-		if (isset($infos[$type]) && isset($infos[$type][$name]) && isset($infos[$type][$name]['merged']))
-		{
-			return true;
-		}
-		if (!isset($infos[$type][$name]))
-		{
-			return NULL;
-		}
-		$infos[$type][$name]['merged']['errors'] = [];
-		$infos[$type][$name]['merged']['uses'] = [];
-		$infos[$type][$name]['merged']['select'] = [];
-
-		if (isset($infos[$type][$name]['parse']))
-		{
-			if (isset($infos[$type][$name]['parse']['select']) && !empty($infos[$type][$name]['parse']['select']))
-			{
-				$infos[$type][$name]['merged']['select'] = $infos[$type][$name]['parse']['select'];
-			}
-			if (isset($infos[$type][$name]['parse']['declares']['error']) && !empty($infos[$type][$name]['parse']['declares']['error']))
-			{
-				$infos[$type][$name]['merged']['errors'] = $infos[$type][$name]['parse']['declares']['error'];
-				foreach ($infos[$type][$name]['merged']['errors'] as $id => $cval)
-				{
-					$infos[$type][$name]['merged']['errors'][$id]['uses'][$type][] = $name;
-				}
-			}
-		}
-		//$bDump = ($name=='GlobBook');
-		//if($bDump) var_dump($infos[$type][$name]['merged']);
-		if (isset($infos[$type][$name]['uses']) && !empty($infos[$type][$name]['uses']))
-		{
-			$infos[$type][$name]['merged']['uses'] = $infos[$type][$name]['uses'];
-			foreach ($infos[$type][$name]['uses'] as $ctype => $cval)
-			{
-				foreach ($cval as $cname)
-				{
-					$tret = self::mergeUses($ctype, $cname, $infos);
-					if (empty($tret))
-					{
-						continue;
-					}
-
-					if (!empty($infos[$ctype][$cname]['merged']['select']))
-					{
-						if(empty($infos[$type][$name]['merged']['select'])) {
-							$infos[$type][$name]['merged']['select'] = $infos[$ctype][$cname]['merged']['select'];
-						} else {
-							foreach ($infos[$ctype][$cname]['merged']['select'] as $mname) {
-								if (in_array($mname, $infos[$type][$name]['merged']['select']))
-								{
-									continue;
-								}
-								$infos[$type][$name]['merged']['select'][] = $mname;
-							}
-						}
-					}
-					if (!empty($infos[$ctype][$cname]['merged']['errors']))
-					{
-						foreach ($infos[$ctype][$cname]['merged']['errors'] as $mval)
-						{
-							$found = false;
-							foreach ($infos[$type][$name]['merged']['errors'] as $oid => $oval)
-							{
-								if ($mval['name'] == $oval['name'] && $mval['value'] == $oval['value'])
-								{
-									foreach ($mval['uses'] as $mtype => $mcval)
-									{
-										if (!isset($infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype]))
-										{
-											$infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype] = $mcval;
-										}
-										else
-										{
-											foreach ($mcval as $mname)
-											{
-												if (in_array($mname, $infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype]))
-												{
-													continue;
-												}
-												$infos[$type][$name]['merged']['errors'][$oid]['uses'][$mtype][] = $mname;
-											}
-										}
-									}
-									$found = true;
-									break;
-								}
-							}
-							if (!$found)
-							{
-								$infos[$type][$name]['merged']['errors'][] = $mval;
-							}
-						}
-					}
-					if (!empty($infos[$ctype][$cname]['merged']['uses']))
-					{
-						foreach ($infos[$ctype][$cname]['merged']['uses'] as $mtype => $mval)
-						{
-							if (!isset($infos[$type][$name]['merged']['uses'][$mtype]))
-							{
-								$infos[$type][$name]['merged']['uses'][$mtype] = $mval;
-							}
-							else
-							{
-								foreach ($mval as $mname)
-								{
-									if (in_array($mname, $infos[$type][$name]['merged']['uses'][$mtype]))
-									{
-										continue;
-									}
-									$infos[$type][$name]['merged']['uses'][$mtype][] = $mname;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		//if($bDump) {var_dump($infos[$type][$name]['merged']); die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);}
-		return true;
-	}
-
-	public static function  removeComments($source) {
-		$RXSQLComments = '@(--[^\r\n]*)|(\#[^\r\n]*)|(/\*[\w\W]*?(?=\*/)\*/)@ms';
-		return ((empty($source)) ?  '' : preg_replace( $RXSQLComments, '', $source ));
-	}
-
-    protected function executeSql($data)
+    private static function removeComments(string $source): string
     {
-        if (empty($data)) {
-            return;
-        }
-        $data = str_replace("\r", '', $data);
-        $sqls = array_filter(explode(DbToolsModule::getInstance()->exportDelimiter, $data), 'strlen');
+        $RXSQLComments = '@(--[^\r\n]*)|(\#[^\r\n]*)|(/\*[\w\W]*?(?=\*/)\*/)@ms';
 
-        $transaction = $this->db->beginTransaction();
-        try {
-            foreach ($sqls as $sql) {
-                $sql = trim($sql);
-                if (strtoupper(substr($sql, 0, 9)) == 'DELIMITER' || strtoupper(substr($sql, 0, 4)) == 'USE ') {
-                    continue;
-                }
-                $this->db->createCommand($sql)->execute();
-            }
-            $transaction->commit();
-        }
-        catch (\Exception $e) {
-            $transaction->rollBack();
-            throw $e;
-        }
+        return ((empty($source)) ? '' : preg_replace($RXSQLComments, '', $source));
     }
 }

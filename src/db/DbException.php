@@ -1,4 +1,5 @@
 <?php
+
 namespace DbTools\db;
 
 use DbToolsExport\dbvalues\DbValues;
@@ -10,8 +11,8 @@ class DbException extends \yii\db\Exception
 
     public function __construct(\yii\db\Exception $e = NULL, $code = -1, $msg = '')
     {
-        $this->dbCode=$code;
-		$errorinfo = empty($e) ? [] : $e->errorInfo;
+        $this->dbCode = $code;
+        $errorinfo = empty($e) ? [] : $e->errorInfo;
         $this->dbMsg = isset($errorinfo[2]) ? $errorinfo[2] : $msg;
 
         if (!empty($e)) {
@@ -22,25 +23,26 @@ class DbException extends \yii\db\Exception
                 $code = $e->getCode();
             }
 
-            if(!isset($errorinfo[2])) {
+            if (!isset($errorinfo[2])) {
                 $msg = $e->getMessage();
-            } else {
+            }
+            else {
                 $msg = DbValues::MessageByCode($code);
-                if(!empty($errorinfo[2])) {
-                    $msg .= ' - '.$errorinfo[2];
+                if (!empty($errorinfo[2])) {
+                    $msg .= ' - ' . $errorinfo[2];
                 }
             }
         }
 
-		parent::__construct($msg,$errorinfo, $code, $e);
-	}
+        parent::__construct($msg, $errorinfo, $code, $e);
+    }
 
-    public function getDbCode()
+    public function getDbCode(): int
     {
         return $this->dbCode;
     }
 
-    public function getDbMsg()
+    public function getDbMsg(): string
     {
         return $this->dbMsg;
     }

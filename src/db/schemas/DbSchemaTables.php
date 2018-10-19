@@ -9,12 +9,25 @@ class DbSchemaTables extends DbSchemaBase
     const cDumpHeader = "\n\n#CONSTANT DUMP\n\n";
     private static $schema = [];
 
-    public function __construct($dbName, $db)
+    public function __construct(string $dbName, \yii\db\Connection $db)
     {
         parent::__construct($dbName, $db, self::cType);
     }
 
-    public function getList()
+    public function taskFile2sql(string $name): array
+    {
+        throw new \Exception('not allowed');
+    }
+
+    protected function getBriefContent(array $data): string {
+        return isset($data['helper']) ? $data['helper']['TABLE_COMMENT'] : '';
+    }
+
+    protected function getDeclaresContent(array $data): string {
+        return '';
+    }
+
+    protected function getList(): array
     {
         $query = (new \yii\db\Query())->select(['*'])->from('information_schema.tables')->where('TABLE_SCHEMA=DATABASE()')->andWhere(['TABLE_TYPE' => 'BASE TABLE'])->andWhere('ENGINE!="MEMORY"');
         $rows = $query->createCommand($this->db)->queryAll();
@@ -28,7 +41,7 @@ class DbSchemaTables extends DbSchemaBase
         return $ret;
     }
 
-    public function getCreate($name)
+    protected function getCreate(string $name): string
     {
         $row = $this->db->createCommand('SHOW CREATE TABLE ' . $this->db->quoteTableName($name))->queryOne();
         if (isset($row['Create Table'])) {
@@ -77,15 +90,7 @@ class DbSchemaTables extends DbSchemaBase
         return $sql;
     }
 
-
-    protected function getBriefContent(array $data): string {
-        return isset($data['helper']) ? $data['helper']['TABLE_COMMENT'] : '';
-    }
-    protected function getDeclaresContent(array $data): string {
-        return '';
-    }
-
-    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+    protected function doAdditionalInfo(array $data, array &$brief, array &$ret): void {
 
         if($this->doFormat && isset($data['helper'])) {
 
@@ -177,7 +182,12 @@ class DbSchemaTables extends DbSchemaBase
         }
     }
 
-    public static function getDump($db, $table)
+    protected function sqlDrop(string $name): string
+    {
+        return 'DROP TABLE IF EXISTS `'.$name.'`';
+    }
+
+    private static function getDump($db, $table)
     {
         $primary='';
         $cols = [];
@@ -224,16 +234,5 @@ class DbSchemaTables extends DbSchemaBase
         $ret.="\nON DUPLICATE KEY UPDATE\n".implode(",\n",$cv).';';
 
         return $ret;
-    }
-
-    public function file2sql($name) : array
-    {
-        throw new \Exception('not allowed');
-    }
-
-    public function drop($name)
-    {
-        $sql = 'DROP TABLE IF EXISTS `'.$name.'`';
-        return $this->executeSql($sql);
     }
 }

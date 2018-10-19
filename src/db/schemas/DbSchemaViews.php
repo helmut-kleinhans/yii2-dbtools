@@ -4,16 +4,24 @@ namespace DbTools\db\schemas;
 use DbTools\DbToolsModule;
 use Yii;
 
-class DbSchemaViews extends DbSchemaTables
+class DbSchemaViews extends DbSchemaBase
 {
 	const cType = 'views';
 
-	public function __construct($dbName, $db)
-	{
-		DbSchemaBase::__construct($dbName, $db, self::cType);
-	}
+    public function __construct(string $dbName, \yii\db\Connection $db)
+    {
+        DbSchemaBase::__construct($dbName, $db, self::cType);
+    }
 
-	public function getList()
+    protected function getBriefContent(array $data): string {
+        return '';
+    }
+
+    protected function getDeclaresContent(array $data): string {
+        return '';
+    }
+
+	protected function getList(): array
 	{
 		$query = (new \yii\db\Query())->select(['*'])->from('information_schema.views')->where('TABLE_SCHEMA=DATABASE()');
 		$rows = $query->createCommand($this->db)->queryAll();
@@ -27,7 +35,7 @@ class DbSchemaViews extends DbSchemaTables
 		return $ret;
 	}
 
-	public function getCreate($name)
+	protected function getCreate(string $name): string
 	{
 		$row = $this->db->createCommand('SHOW CREATE VIEW ' . $this->db->quoteTableName($name))->queryOne();
 		if (isset($row['Create View']))
@@ -41,8 +49,8 @@ class DbSchemaViews extends DbSchemaTables
 		}
 
         $full[] = 'DELIMITER ';
-        $full[] = 'USE `'.self::getDbName().'`';
-        $full[] = 'DROP VIEW /*!50032 IF EXISTS */ `'.$name.'`';
+        $full[] = 'USE `'.$this->getDbName().'`';
+        $full[] = $this->sqlDrop($name);
         $full[] = $sql;
         $full[] = 'DELIMITER ;';
 
@@ -51,11 +59,7 @@ class DbSchemaViews extends DbSchemaTables
         return $sql;
 	}
 
-    protected function getBriefContent(array $data): string {
-        return '';
-    }
-
-    protected function _doAdditionalInfo(array $data, array &$brief, array &$ret) {
+    protected function doAdditionalInfo(array $data, array &$brief, array &$ret): void {
 	    if(isset($data['helper'])) {
             if ($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
                 $ret['warnings'][] = 'DEFINER needs to be "' . DbToolsModule::getInstance()->checkDefiner . '"';
@@ -67,9 +71,8 @@ class DbSchemaViews extends DbSchemaTables
         }
     }
 
-    public function drop($name)
+    protected function sqlDrop(string $name): string
     {
-        $sql = 'DROP VIEW /*!50032 IF EXISTS */ `'.$name.'`';
-        return $this->executeSql($sql);
+        return 'DROP VIEW /*!50032 IF EXISTS */ `'.$name.'`';
     }
 }

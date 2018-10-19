@@ -21,7 +21,7 @@ class DbBlockReconnect
         $this->reset();
     }
 
-    public function reset()
+    public function reset(): void
     {
         $this->db->blockReconnect = $this->oldState;
     }
