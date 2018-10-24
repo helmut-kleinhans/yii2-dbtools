@@ -53,8 +53,10 @@ class DbSchemaEvents extends DbSchemaBase
 	}
 
     protected function doAdditionalInfo(array $data, array &$brief, array &$ret): void {
-        if($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
-            $ret['warnings'][] = 'DEFINER needs to be "'.DbToolsModule::getInstance()->checkDefiner.'"';
+        if(isset($data['helper'])) {
+            if ($data['helper']['DEFINER'] != DbToolsModule::getInstance()->checkDefiner) {
+                $ret['warnings'][] = 'DEFINER needs to be "' . DbToolsModule::getInstance()->checkDefiner . '"';
+            }
         }
     }
 

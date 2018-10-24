@@ -64,6 +64,33 @@ class DbSchemaProcedures extends DbSchemaBase
             }
 
             $orgparams = $data['params'];
+            //check input variable conditions
+            if(!empty($orgparams))
+            {
+                foreach ($orgparams as $k=>$v) {
+                    #0 = return param
+                    if($k==0) continue;
+
+                    $in = self::isParamModeIn($v);
+                    $out = self::isParamModeOut($v);
+                    $prefix='';
+                    if($in && $out) $prefix='io';
+                    else if($in) $prefix='i';
+                    else if($out) $prefix='o';
+                    else {
+                        throw new \Exception('unknown param mode: '.$v['PARAMETER_MODE']);
+                    }
+                    $prefix.='_';
+
+                    $name = $v['PARAMETER_NAME'];
+                    if(substr($name,0,strlen($prefix)) != $prefix) {
+                        $ret['warnings'][] = 'PARAMETER [ ' . $name . ' ]: missing prefix "'.$prefix.'"';
+                    }
+
+                    #todo: check unused
+                }
+            }
+
             $param = $brief['param'];
             unset($brief['param']);
 
@@ -108,7 +135,7 @@ class DbSchemaProcedures extends DbSchemaBase
                     }
                     $pret .= '
     <tr>
-        <td><span class="label label-' . (stripos($pdata['PARAMETER_MODE'], 'in') !== false ? 'primary' : 'default') . '">&nbsp;IN&nbsp;</span><span class="label label-' . (stripos($pdata['PARAMETER_MODE'], 'out') !== false ? 'success' : 'default') . '">&nbsp;OUT&nbsp;</span></td>
+        <td><span class="label label-' . (self::isParamModeIn($pdata) !== false ? 'primary' : 'default') . '">&nbsp;IN&nbsp;</span><span class="label label-' . (self::isParamModeOut($pdata) ? 'success' : 'default') . '">&nbsp;OUT&nbsp;</span></td>
         <td>' . $name . '</td><td>' . strtoupper($pdata['DTD_IDENTIFIER']) . '</td><td>' . $pdesc . '</td><td>&nbsp;</td>
     </tr>
 ';
@@ -132,5 +159,13 @@ class DbSchemaProcedures extends DbSchemaBase
     protected function sqlDrop(string $name): string
     {
         return 'DROP PROCEDURE IF EXISTS `'.$name.'`';
+    }
+
+    private static function isParamModeIn(array $data) : bool {
+        return stripos($data['PARAMETER_MODE'], 'in') !== false;
+    }
+
+    private static function isParamModeOut(array $data) : bool {
+        return stripos($data['PARAMETER_MODE'], 'out') !== false;
     }
 }

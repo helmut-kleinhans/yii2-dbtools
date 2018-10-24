@@ -428,6 +428,56 @@ class DbSchemaBase
         return '<button type="button" class="btn btn-link" onclick="selectItem(\'' . $db . '|' . $group . '|' . $name . '\');">' . $name . '</button>';
     }
 
+    protected static function inBody(string $body, string $find, int $startPos = 0): bool
+    {
+        if (empty($body) || empty($find)) {
+            return false;
+        }
+        $arrPrevchar = [
+            ' ',
+            '(',
+            ')',
+            '`',
+            '\'',
+            '"',
+            '.',
+            ',',
+            ';',
+            '=',
+            "\n",
+            "\r",
+            "\t",
+        ];
+        $arrNextchar = [
+            ' ',
+            '(',
+            ')',
+            '`',
+            '\'',
+            '"',
+            '.',
+            ',',
+            ';',
+            '=',
+            "\n",
+            "\r",
+            "\t",
+        ];
+        $pos = $startPos;
+
+        while ($pos < strlen($body) && $pos = strpos($body, $find, $pos)) {
+            $prevchar = substr($body, $pos - 1, 1);
+            $pos += strlen($find);
+            $nextchar = substr($body, $pos, 1);
+            $pos += 1;
+            if (in_array($prevchar, $arrPrevchar) && in_array($nextchar, $arrNextchar)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
@@ -717,7 +767,9 @@ class DbSchemaBase
             $found = false;
             foreach ($knowncat as $k => $d) {
                 if (substr($row, 0, strlen($k)) == $k) {
-                    $ret[$currentcat][] = $current;
+                    if (!empty($current)) {
+                        $ret[$currentcat][] = $current;
+                    }
                     $currentcat = $d;
                     $current = [];
                     $current[] = trim(substr($row, strlen($k)));
@@ -1098,56 +1150,6 @@ class DbSchemaBase
         return $ret;
     }
 
-    private static function inBody(string $body, string $find, int $startPos = 0): bool
-    {
-        if (empty($body) || empty($find)) {
-            return false;
-        }
-        $arrPrevchar = [
-            ' ',
-            '(',
-            ')',
-            '`',
-            '\'',
-            '"',
-            '.',
-            ',',
-            ';',
-            '=',
-            "\n",
-            "\r",
-            "\t",
-        ];
-        $arrNextchar = [
-            ' ',
-            '(',
-            ')',
-            '`',
-            '\'',
-            '"',
-            '.',
-            ',',
-            ';',
-            '=',
-            "\n",
-            "\r",
-            "\t",
-        ];
-        $pos = $startPos;
-
-        while ($pos < strlen($body) && $pos = strpos($body, $find, $pos)) {
-            $prevchar = substr($body, $pos - 1, 1);
-            $pos += strlen($find);
-            $nextchar = substr($body, $pos, 1);
-            $pos += 1;
-            if (in_array($prevchar, $arrPrevchar) && in_array($nextchar, $arrNextchar)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private static function getBetween(string $str, string $startDelimiter, string $endDelimiter): array
     {
         if (empty($str) || empty($startDelimiter) || empty($endDelimiter)) {
@@ -1176,30 +1178,26 @@ class DbSchemaBase
             return false;
         }
         if (isset($infos[$type]) && isset($infos[$type][$name]) && isset($infos[$type][$name]['merged'])) {
-            return false;
+            return true;
         }
         if (!isset($infos[$type][$name])) {
             return false;
         }
-        $infos[$type][$name]['merged']['errors'] = [];
-        $infos[$type][$name]['merged']['uses'] = [];
-        $infos[$type][$name]['merged']['select'] = [];
 
-        if (isset($infos[$type][$name]['parse'])) {
-            if (isset($infos[$type][$name]['parse']['select']) && !empty($infos[$type][$name]['parse']['select'])) {
-                $infos[$type][$name]['merged']['select'] = $infos[$type][$name]['parse']['select'];
-            }
-            if (isset($infos[$type][$name]['parse']['declares']['error']) && !empty($infos[$type][$name]['parse']['declares']['error'])) {
-                $infos[$type][$name]['merged']['errors'] = $infos[$type][$name]['parse']['declares']['error'];
-                foreach ($infos[$type][$name]['merged']['errors'] as $id => $cval) {
-                    $infos[$type][$name]['merged']['errors'][$id]['uses'][$type][] = $name;
-                }
-            }
+        $infos[$type][$name]['merged']['uses'] = [];
+
+        $infos[$type][$name]['merged']['select'] = $infos[$type][$name]['parse']['select'];
+
+        $infos[$type][$name]['merged']['errors'] = $infos[$type][$name]['parse']['declares']['error'];
+
+        #set uses this item
+        foreach ($infos[$type][$name]['merged']['errors'] as $id => $cval) {
+            $infos[$type][$name]['merged']['errors'][$id]['uses'][$type][] = $name;
         }
-        //$bDump = ($name=='GlobBook');
-        //if($bDump) var_dump($infos[$type][$name]['merged']);
+
         if (isset($infos[$type][$name]['uses']) && !empty($infos[$type][$name]['uses'])) {
             $infos[$type][$name]['merged']['uses'] = $infos[$type][$name]['uses'];
+
             foreach ($infos[$type][$name]['uses'] as $ctype => $cval) {
                 foreach ($cval as $cname) {
                     $tret = self::mergeUses($ctype, $cname, $infos);
@@ -1266,7 +1264,6 @@ class DbSchemaBase
             }
         }
 
-        //if($bDump) {var_dump($infos[$type][$name]['merged']); die(__FILE__ . '::' . __FUNCTION__ . '::' . __LINE__);}
         return true;
     }
 
