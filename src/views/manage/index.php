@@ -16,10 +16,12 @@ $statusmap = [
 $specialFlags=['unused','noflags'];
 
 $jsonDataTable = [];
+$types = [];
 
 if(isset($data['data'])) {
 
     foreach ($data['data'] as $group => $items) {
+        $types[] = $group;
         if (empty($items)) {
             continue;
         }
@@ -41,7 +43,6 @@ if(isset($data['data'])) {
 ?>
 
 <style type="text/css" media="screen">
-
     .text-default {
         color: #7f7f7f;
         text-decoration: line-through;
@@ -69,6 +70,17 @@ if(isset($data['data'])) {
                             echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_status_', $(this).prop('checked') );") . '<br>';
                             foreach ($statusmap as $status => $style) {
                                 echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_' . $status, $status, $style, false, 'updateItemTable()');
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">Type</div>
+                        <div class="panel-body">
+                            <?php
+                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_type_', $(this).prop('checked') );") . '<br>';
+                            foreach ($types as $type) {
+                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_' . $type, $type, 'default', false, 'updateItemTable()');
                             }
                             ?>
                         </div>
@@ -173,6 +185,11 @@ foreach ($statusmap as $status=>$style)
     $settingsLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_status_' . $status);
     $settingsSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_status_' . $status);
 }
+foreach ($types as $type)
+{
+    $settingsLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_type_' . $type);
+    $settingsSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_type_' . $type);
+}
 
 $settingsLoad .= \DbTools\helper\HelperView::getValSettingsLoad('i_filter_search');
 $settingsSave_Filter_Search = \DbTools\helper\HelperView::getValSettingsSave('i_filter_search');
@@ -184,11 +201,11 @@ foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
 
 $customer = isset($_REQUEST['customer']) ? $_REQUEST['customer'] : '';
 
-$checkFlagsDefault = [];
+$checkFlags = [];
 foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-    $checkFlagsDefault[]="if( $('#cb_filter_flags_$name').prop(\"checked\")){fd=true; hd = (hd || value['$name'] == 1)}";
+    $checkFlags[]="if( $('#cb_filter_flags_$name').prop(\"checked\")){fd=true; hd = (hd || value['$name'] == 1)}";
 }
-$checkFlagsDefault='var fd=false;hd=false; '.implode("\n",$checkFlagsDefault).' return !fd || hd;';
+$checkFlags='var fd=false;hd=false; '.implode("\n",$checkFlags).' return !fd || hd;';
 $this->registerJs(<<<JS
     var table = null;
     var dataTable = $jsonDataTable;
@@ -213,7 +230,7 @@ $this->registerJs(<<<JS
     function checkFlags(rowData) {
         var value = rowData.flags;
         
-        $checkFlagsDefault;
+        $checkFlags;
     }
     
     function checkSpecial(rowData) {
@@ -231,6 +248,7 @@ $this->registerJs(<<<JS
         function( settings, searchData, index, rowData, counter ) {
             if(!checkRemoved(rowData)) return false;
             if(!$('#cb_filter_status_'+rowData.status).prop("checked")) return false;
+            if(!$('#cb_filter_type_'+rowData.group).prop("checked")) return false;
             if(!checkFlags(rowData)) return false;
             if(!checkSpecial(rowData)) return false;
             return true;
