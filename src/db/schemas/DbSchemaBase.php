@@ -107,7 +107,40 @@ class DbSchemaBase
 
         $this->setFileContent($name, $content);
 
-        $createDb = $this->getCreate($name);
+        try {
+            $createDb = $this->getCreate($name);
+        } catch (\Throwable $e) {
+            $createDb = '';
+        }
+
+        return [
+            'createdb'   => $createDb,
+            'createfile' => $content,
+        ];
+    }
+
+    public function taskMarkAsNotRemoved(string $name): array
+    {
+        $data = $this->getFileContent($name);
+
+        if (empty($data)) {
+            throw new \Exception('file was empty');
+        }
+
+        //prev marked as removed --- grep old file content
+        if (!self::isRemoved($data)) {
+            throw new Exception('file is not marked as removed');
+        }
+
+        $content = trim(substr($data,strlen(self::REMOVED_FILE_CONTENT)));
+
+        $this->setFileContent($name, $content);
+
+        try {
+            $createDb = $this->getCreate($name);
+        } catch (\Throwable $e) {
+            $createDb = '';
+        }
 
         return [
             'createdb'   => $createDb,

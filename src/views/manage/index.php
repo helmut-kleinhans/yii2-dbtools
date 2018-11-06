@@ -144,6 +144,7 @@ if(isset($data['data'])) {
                         <label>SVN</label>
                         <button type="button" id="file2sql" class="btn btn-primary" onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql</button>
                         <button type="button" id="markAsRemoved" class="btn btn-danger" onclick="callHome('markAsRemoved')">mark as removed</button>
+                        <button type="button" id="markAsNotRemoved" class="btn btn-warning" onclick="callHome('markAsNotRemoved')">mark as not removed</button>
                     </div>
                     <div class="col-md-6">
                         <label>DB</label>
@@ -246,7 +247,7 @@ $this->registerJs(<<<JS
     /* Custom filtering function which will search data in column four between two values */
     $.fn.dataTable.ext.search.push(
         function( settings, searchData, index, rowData, counter ) {
-            if(!checkRemoved(rowData)) return false;
+            /*if(!checkRemoved(rowData)) return false;*/
             if(!$('#cb_filter_status_'+rowData.status).prop("checked")) return false;
             if(!$('#cb_filter_type_'+rowData.group).prop("checked")) return false;
             if(!checkFlags(rowData)) return false;
@@ -625,6 +626,7 @@ $this->registerJs(<<<JS
                 buttonDisable($('#file2sql'));
                 buttonDisable($('#sql2file'));
                 buttonDisable($('#markAsRemoved'));
+                buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));                
                 break;
@@ -632,6 +634,7 @@ $this->registerJs(<<<JS
                 buttonEnable($('#file2sql'));
                 buttonDisable($('#sql2file'));
                 buttonEnable($('#markAsRemoved'));
+                buttonDisable($('#markAsNotRemoved'));
                 buttonDisable($('#drop'));
                 buttonDisable($('#dropAndMarkAsRemoved'));
                 break;
@@ -639,6 +642,7 @@ $this->registerJs(<<<JS
                 buttonDisable($('#file2sql'));
                 buttonEnable($('#sql2file'));
                 buttonDisable($('#markAsRemoved'));
+                buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));
                 break;
@@ -646,6 +650,7 @@ $this->registerJs(<<<JS
                 buttonEnable($('#file2sql'));
                 buttonEnable($('#sql2file'));
                 buttonDisable($('#markAsRemoved'));
+                buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));
                 break;
@@ -661,12 +666,14 @@ $this->registerJs(<<<JS
                     buttonDisable($('#dropAndMarkAsRemoved'));
                 }
                 buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#markAsNotRemoved'));
                 break;
             default:
                 alert('unknown status:'+CurItem.status);
                 buttonDisable($('#file2sql'));
                 buttonDisable($('#sql2file'));
                 buttonDisable($('#markAsRemoved'));
+                buttonDisable($('#markAsNotRemoved'));
                 buttonDisable($('#drop'));
                 buttonDisable($('#dropAndMarkAsRemoved'));
         }

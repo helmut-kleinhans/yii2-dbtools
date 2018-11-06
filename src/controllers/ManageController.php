@@ -109,6 +109,9 @@ class ManageController extends Controller
             case 'markAsRemoved':
                 $ret = $c->taskMarkAsRemoved($name);
                 break;
+            case 'markAsNotRemoved':
+                $ret = $c->taskMarkAsNotRemoved($name);
+                break;
             case 'dropAndMarkAsRemoved':
                 $ret = $c->taskDropAndMarkAsRemoved($name);
                 break;
