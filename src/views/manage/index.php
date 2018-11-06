@@ -5,6 +5,7 @@ use yii\bootstrap\ActiveForm;
 $this->title = 'Manage DBs - '.$active;
 
 $dbmanageasset = \DbTools\DbManageAsset::register($this);
+
 $statusmap = [
     'ok' =>'success',
     'new' =>'primary',
@@ -585,8 +586,6 @@ $this->registerJs(<<<JS
         else {
             $('#itemstatus').html('');
         }
-        console.log(CurItem.flags);
-        console.log(CurItem.flags.length);
         
         var htmlFlags='';
         Object.keys(CurItem.flags).forEach(function(key,index) {
