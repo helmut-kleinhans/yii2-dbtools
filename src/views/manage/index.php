@@ -13,7 +13,7 @@ $statusmap = [
     'removed' =>'default',
 ];
 
-$specialFlags=['unused','noflags','onlywarnings'];
+$specialFlags=['unused','noflags'];
 
 $jsonDataTable = [];
 
@@ -206,11 +206,6 @@ $this->registerJs(<<<JS
     
     function checkSpecialNoFlags(rowData) {      
         return rowData.flags.length == 0;
-    }
-    
-    function checkSpecialOnlyWadnings(rowData) {      
-        console.log(rowData);
-        return rowData.length == 0;
     }
     
     function checkFlags(rowData) {
