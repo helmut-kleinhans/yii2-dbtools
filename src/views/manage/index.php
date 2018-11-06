@@ -55,7 +55,7 @@ if(isset($data['data'])) {
                 <div class="form-group pull-left">
                     <button href="#panel_filters" class="btn btn-info" data-toggle="collapse">Filters</button>
                 </div>
-                <div class="form-group" style="display:inline;">
+                <div class="form-group">
                     <div class="input-group">
                         <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
                         <input type="text" id="i_filter_search" class="form-control" placeholder="Search">
