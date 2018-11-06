@@ -288,7 +288,7 @@ $this->registerJs(<<<JS
             rowId: 'key',
             columns: [
                 { title: "Type", data: "group" },
-                { title: "", data: "warnings" },
+                { title: "", data: "flags" },
                 { title: "Status", data: "status"},
                 { title: "Name", data: "name"}
             ],
@@ -319,7 +319,7 @@ $this->registerJs(<<<JS
                     className: "dt-center",
 
                     render: function ( data, type, row ) {
-                        if(data) {
+                        if(data && data.warning) {
                             return '$imgDanger';
                         } else {
                             return '';

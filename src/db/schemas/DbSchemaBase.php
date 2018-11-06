@@ -12,6 +12,7 @@ use yii\helpers\FileHelper;
 class DbSchemaBase
 {
     const REMOVED_FILE_CONTENT = '/* -- REMOVED -- */';
+    const FLAGS_WARNING = 'warning';
     const FLAGS_DEPRECATED = 'deprecated';
     const FLAGS_LEGACY = 'legacy';
     const FLAGS_DEVEL = 'devel';
@@ -21,6 +22,7 @@ class DbSchemaBase
     const FLAGS_USEDBY = 'usedBy';
     const FLAGS_CONSTANT = 'constant';
     const FLAGS_ALL = [
+        self::FLAGS_WARNING,
         self::FLAGS_DEPRECATED,
         self::FLAGS_LEGACY,
         self::FLAGS_DEVEL,
@@ -283,6 +285,7 @@ class DbSchemaBase
             $result[$name]['flags'] = $flags;
             if (isset($value['warnings']) && !empty($value['warnings'])) {
                 $result[$name]['warnings'] = '<ul><li>' . implode('</li><li>', $value['warnings']) . '</li></ul>';
+                $result[$name]['flags'][self::FLAGS_WARNING] = 1;
             }
             else {
                 $result[$name]['warnings'] = '';
