@@ -17,6 +17,7 @@ class DbManageAsset extends AssetBundle
         //$this->js[] = YII_DEBUG ? 'js/manage.js' : 'js/manage.min.js';
         $this->depends[] = JqueryAsset::className();
 
+        $this->css[] = 'css/jquery.triSwitch.css';
         $this->css[] = 'css/codemirror.css';
         $this->css[] = 'css/jquery.dataTables.min.css';
         $this->css[] = 'css/select.bootstrap.min.css';
@@ -24,6 +25,7 @@ class DbManageAsset extends AssetBundle
         $this->css[] = 'css/mergely.css';
         $this->css[] = 'css/manage.css';
 
+        $this->js[] = 'js/jquery.triSwitch.js';
         $this->js[] = 'js/manage.js';
         $this->js[] = 'js/jquery.dataTables.min.js';
         $this->js[] = 'js/dataTables.scroller.min.js';

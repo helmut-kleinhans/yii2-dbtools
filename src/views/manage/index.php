@@ -90,21 +90,17 @@ if(isset($data['data'])) {
                     <div class="panel panel-primary">
                         <div class="panel-heading">Flags</div>
                         <div class="panel-body">
-                            <?php
-                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_all', 'change all', 'info', false, 'cbFlagsAll($(this))') . '<br>';
-                            foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_flags_' . $name, $name, 'default', false, 'cbFlags($(this))');
-                            }
-                            ?>
-                        </div>
-                    </div>
-
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">Special</div>
-                        <div class="panel-body">
+                            <button class="btn btn-info" onclick="btnResetFlags()">Reset</button>
                             <?php
                             foreach ($specialFlags as $name) {
-                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_special_' . $name, $name, 'warning', false, 'cbSpecial($(this))');
+                                echo '
+                            <button class="btn btn-warning" onclick="btn'.ucwords($name).'()">'.$name.'</button>';
+                            }
+                            ?>
+                            <br/>
+                            <?php
+                            foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
+                                echo \DbTools\helper\HelperView::getSwitchCheckbox('switch_filter_flags_' . $name, $name, 'default');
                             }
                             ?>
                         </div>
@@ -196,23 +192,29 @@ foreach ($types as $type)
 $settingsLoad .= \DbTools\helper\HelperView::getValSettingsLoad('i_filter_search');
 $settingsSave_Filter_Search = \DbTools\helper\HelperView::getValSettingsSave('i_filter_search');
 
+$switchInit = '';
 foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-    $settingsLoad .= \DbTools\helper\HelperView::getCbSettingsLoadBool('cb_filter_flags_' . $name);
-    $settingsSave .= \DbTools\helper\HelperView::getCbSettingsSaveBool('cb_filter_flags_' . $name);
+    $switchInit .= \DbTools\helper\HelperView::getSwitchInit('switch_filter_flags_' . $name);
+    $settingsSave .= \DbTools\helper\HelperView::getValSettingsSave('switch_filter_flags_' . $name);
 }
 
 $customer = isset($_REQUEST['customer']) ? $_REQUEST['customer'] : '';
 
 $checkFlags = [];
 foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-    $checkFlags[]="if( $('#cb_filter_flags_$name').prop(\"checked\")){fd=true; hd = (hd || value['$name'] == 1)}";
+    $checkFlags[] = "
+var fval = $('#switch_filter_flags_$name').val();
+if(fval  != -1 && ((fval == 1 && !value['$name']) || (fval == 0 && value['$name']))) {
+    return false;
+}";
 }
-$checkFlags='var fd=false;hd=false; '.implode("\n",$checkFlags).' return !fd || hd;';
+$checkFlags=implode("\n",$checkFlags);
 $this->registerJs(<<<JS
     var table = null;
     var dataTable = $jsonDataTable;
     var statusMap = $jsonStatusmap;
     var CurItem = null;
+    var initSwitchesInProgress = false;
 
     var curCol = 0;
     var colGroup = curCol++;
@@ -220,29 +222,16 @@ $this->registerJs(<<<JS
     var colStatus = curCol++;
     var colName = curCol++;
 
-    function checkSpecialUnused(rowData) { 
-        var flags = rowData.flags;
-        return !flags['export'] && !flags['select'] && !flags['usedBy'] && !flags['devel'] && !flags['legacy'];
-    }
-    
-    function checkSpecialNoFlags(rowData) {      
-        return rowData.flags.length == 0;
-    }
+    function checkRemoved(rowData) { 
+        return rowData.status!='removed' || rowData.createdb !='';
+    }    
     
     function checkFlags(rowData) {
         var value = rowData.flags;
         
-        $checkFlags;
-    }
-    
-    function checkSpecial(rowData) {
-        if($('#cb_filter_special_unused').prop("checked")) return checkSpecialUnused(rowData);
-        if($('#cb_filter_special_noflags').prop("checked")) return checkSpecialNoFlags(rowData);
+        $checkFlags
+        
         return true;
-    }
-    
-    function checkRemoved(rowData) { 
-        return rowData.status!='removed' || rowData.createdb !='';
     }
     
     /* Custom filtering function which will search data in column four between two values */
@@ -252,36 +241,38 @@ $this->registerJs(<<<JS
             if(!$('#cb_filter_status_'+rowData.status).prop("checked")) return false;
             if(!$('#cb_filter_type_'+rowData.group).prop("checked")) return false;
             if(!checkFlags(rowData)) return false;
-            if(!checkSpecial(rowData)) return false;
             return true;
         }
     );
-    
-    function cbFlagsAll(obj) {
-        cbSetAllChecked('cb_filter_flags_', obj.prop('checked'));
-        cbSetAllChecked('cb_filter_special_',false);    
-    }
-    
-    function cbFlags(obj) {
-        if(obj.prop("checked")) {
-            cbSetAllChecked('cb_filter_special_',false);
-        }
-        updateItemTable();
-    }
-
-    function cbSpecial(obj) {
-        if(obj.prop("checked")) {
-            cbSetAllChecked('cb_filter_flags_', false);
-            cbSetAllChecked('cb_filter_special_',false);
-            obj.prop("checked",true);
-        }
-        updateItemTable();
-    }
-    
+         
     function cbSetAllChecked(id,checked) {
         $('[id^='+id+']').each(function( index ) {
             $(this).prop("checked", checked);
         });
+        updateItemTable();
+    }
+    
+    function btnResetFlags() {
+        $("[id^=switch_filter_flags_]").val(-1);
+        updateItemTable();
+    }
+    
+    function btnUnused() {      
+        $("[id^=switch_filter_flags_]").val(-1);
+        $("#switch_filter_flags_export").val(0);
+        $("#switch_filter_flags_select").val(0);
+        $("#switch_filter_flags_usedBy").val(0);
+        $("#switch_filter_flags_devel").val(0);
+        $("#switch_filter_flags_legacy").val(0);
+        
+        //events are allways used
+        $("#cb_filter_type_events").prop("checked", false);
+        
+        updateItemTable();
+    }
+    
+    function btnNoflags() {
+        $("[id^=switch_filter_flags_]").val(0);
         updateItemTable();
     }
     
@@ -373,6 +364,18 @@ $this->registerJs(<<<JS
             selectItem(v);
         }
     }
+    
+    function initSwitches() {        
+        initSwitchesInProgress = true;
+        
+        $switchInit
+        
+        $("[id^='switch_']").on("change", function () {
+                updateItemTable();
+            });
+        
+        initSwitchesInProgress = false;
+    }
 
     function settingsSave(key,val) {
         localStorage.setItem('db|'+key,val);
@@ -402,11 +405,14 @@ $this->registerJs(<<<JS
         });
         $('#compare').mergely('resize', '');
 
+        initSwitches();
+        
         $settingsLoad
 
         $('#contentTab a[href="' + settingsLoad('activeTab','#A') + '"]').tab('show');
 
         initItemTable();
+
 
         $('#compare').mergely('resize', '');
 
@@ -415,6 +421,7 @@ $this->registerJs(<<<JS
             table.search($(this).val()).draw() ;
         });
         table.search($('#i_filter_search').val()).draw() ;
+        
     });
 
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
@@ -545,7 +552,7 @@ $this->registerJs(<<<JS
 
     function updateItemTable() {
         if(!table) return;
-
+        
         $settingsSave
 
         var row = table.row({selected: true});

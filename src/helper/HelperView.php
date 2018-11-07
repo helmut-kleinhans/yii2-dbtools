@@ -14,6 +14,13 @@ class HelperView
                 </label>';
     }
 
+    public static function getSwitchCheckbox(string $id, string $label, string $style): string
+    {
+        return '<label for="' . $id . '" class="btn btn-' . $style . '" style="padding: 0.2em 0.5em; margin:0.2em;">' . $label . '
+                    <input type="checkbox" id="' . $id . '" data-jtmulti-state/>
+                </label>';
+    }
+
     public static function getCbSettingsLoadBool(string $id, bool $default = true): string
     {
         return '$("#' . $id . '").prop("checked", settingsLoadBool("' . $id . '", ' . $default . '));';
@@ -32,5 +39,18 @@ class HelperView
     public static function getValSettingsSave(string $id): string
     {
         return 'settingsSave("' . $id . '", $("#' . $id . '").val());';
+    }
+
+    public static function getSwitchInit(string $id): string
+    {
+        return 'var sval = settingsLoad("' . $id . '", -1); 
+        if(sval==1) $("#' . $id . '").triSwitch({type: "normal", defaultValue: 1}); 
+        else if(sval==0) $("#' . $id . '").triSwitch({type: "normal", defaultValue: 0}); 
+        else $("#' . $id . '").triSwitch({type: "normal", defaultValue: -1});';
+    }
+
+    public static function getSwitchSettingsSave(string $id): string
+    {
+        return self::getValSettingsSave($id);
     }
 }
