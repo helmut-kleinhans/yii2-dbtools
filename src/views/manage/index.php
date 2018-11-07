@@ -267,7 +267,7 @@ $this->registerJs(<<<JS
         
         //events are allways used
         $("#cb_filter_type_events").prop("checked", false);
-        $("#cb_filter_type_trigers").prop("checked", false);
+        $("#cb_filter_type_triggers").prop("checked", false);
         
         updateItemTable();
     }
