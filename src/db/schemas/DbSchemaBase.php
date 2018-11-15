@@ -14,16 +14,18 @@ class DbSchemaBase
     const REMOVED_FILE_CONTENT = '/* -- REMOVED -- */';
     const FLAGS_WARNING = 'warning';
     const FLAGS_DEPRECATED = 'deprecated';
+    const FLAGS_USESDEPRECATED = 'uses_deprecated';
     const FLAGS_LEGACY = 'legacy';
     const FLAGS_DEVEL = 'devel';
     const FLAGS_TODO = 'todo';
     const FLAGS_EXPORT = 'export';
     const FLAGS_SELECT = 'select';
-    const FLAGS_USEDBY = 'usedBy';
+    const FLAGS_USEDBY = 'used_by';
     const FLAGS_CONSTANT = 'constant';
     const FLAGS_ALL = [
         self::FLAGS_WARNING,
         self::FLAGS_DEPRECATED,
+        self::FLAGS_USESDEPRECATED,
         self::FLAGS_LEGACY,
         self::FLAGS_DEVEL,
         self::FLAGS_TODO,
@@ -235,6 +237,7 @@ class DbSchemaBase
             $errors = isset($value['merged']['errors']) ? $value['merged']['errors'] : [];
             $uses = isset($value['merged']['uses']) ? $value['merged']['uses'] : [];
             $usedBy = isset($value['usedBy']) ? $value['usedBy'] : [];
+            $usesdeprecated = isset($value['usesdeprecated']) ? $value['usesdeprecated'] : [];
             $selects = isset($value['merged']['select']) ? $value['merged']['select'] : [];
             $flags = isset($value['parse']) && isset($value['parse']['flags']) ? $value['parse']['flags'] : [];
 
@@ -251,7 +254,8 @@ class DbSchemaBase
                     $body .= '<td><ul>';
                     sort($tval);
                     foreach ($tval as $tname) {
-                        $body .= '<li>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
+                        $depstyle = (isset($usesdeprecated[$ttype][$tname])) ? ' class="bg-danger"' : '';
+                        $body .= '<li' . $depstyle . '>' . self::getLink($this->dbName, $ttype, $tname) . '</li>';
                     }
                     $body .= '</ul></td>';
                 }
@@ -374,6 +378,26 @@ class DbSchemaBase
                 foreach ($value['uses'] as $ctype => $cval) {
                     foreach ($cval as $cname) {
                         $data[$ctype][$cname]['usedBy'][$type][] = $name;
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    public static function setUsesDeprecated(array $data): array
+    {
+        foreach ($data as $type => $list) {
+            foreach ($list as $name => $value) {
+                if (empty($value['usedBy']) || !isset($value['parse']['flags'][self::FLAGS_DEPRECATED])) {
+                    continue;
+                }
+
+                foreach ($value['usedBy'] as $ctype => $cval) {
+                    foreach ($cval as $cname) {
+                        $data[$ctype][$cname]['usesdeprecated'][$type][$name] = 1;
+                        $data[$ctype][$cname]['parse']['flags'][self::FLAGS_USESDEPRECATED] = 1;
                     }
                 }
             }

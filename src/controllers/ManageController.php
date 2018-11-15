@@ -187,6 +187,7 @@ class ManageController extends Controller
         }
         $ret['data'] = DbSchemaBase::mergeData($ret['data']);
         $ret['data'] = DbSchemaBase::setUsedBy($ret['data']);
+        $ret['data'] = DbSchemaBase::setUsesDeprecated($ret['data']);
         foreach ($classes as $type => $c) {
             $ret['data'][$type] = $c->finalize($ret['data'][$type]);
         }
