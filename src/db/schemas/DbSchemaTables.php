@@ -61,6 +61,7 @@ class DbSchemaTables extends DbSchemaBase
             $t .= substr($sql, $posend + 1);
             $sql = $t;
         }
+        /*
         $pos = strpos($sql, 'CONNECTION=');
         if ($pos > 0) {
             $t = substr($sql, 0, $pos);
@@ -72,6 +73,7 @@ class DbSchemaTables extends DbSchemaBase
             $t .= substr($sql, $posend + 1);
             $sql = $t;
         }
+        */
 
         $sql = trim($sql).';';
 
