@@ -632,7 +632,7 @@ $this->registerJs(<<<JS
             case 'ok':
                 buttonDisable($('#file2sql'));
                 buttonDisable($('#sql2file'));
-                buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#markAsRemoved'));
                 buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));                
@@ -656,7 +656,7 @@ $this->registerJs(<<<JS
             case 'different':
                 buttonEnable($('#file2sql'));
                 buttonEnable($('#sql2file'));
-                buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#markAsRemoved'));
                 buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));
