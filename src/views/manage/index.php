@@ -54,58 +54,69 @@ if(isset($data['data'])) {
     <div class="col-md-3">
         <fieldset id="templates">
             <div class="col">
-                <div class="form-group pull-left">
-                    <button href="#panel_filters" class="btn btn-info" data-toggle="collapse">Filters</button>
-                </div>
                 <div class="form-group">
                     <div class="input-group">
                         <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
                         <input type="text" id="i_filter_search" class="form-control" placeholder="Search">
                     </div>
                 </div>
-                <div class="panel-group collapse" id="panel_filters">
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">Status</div>
-                        <div class="panel-body">
-                            <?php
-                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_status_', $(this).prop('checked') );") . '<br>';
-                            foreach ($statusmap as $status => $style) {
-                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_' . $status, $status, $style, false, 'updateItemTable()');
-                            }
-                            ?>
-                        </div>
-                    </div>
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">Type</div>
-                        <div class="panel-body">
-                            <?php
-                            echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_type_', $(this).prop('checked') );") . '<br>';
-                            foreach ($types as $type) {
-                                echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_' . $type, $type, 'default', false, 'updateItemTable()');
-                            }
-                            ?>
-                        </div>
-                    </div>
+            </div>
+            <div class="col">
+                <?php
+                {
+                    \insolita\wgadminlte\CollapseBox::begin([
+                                                                'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
+                                                                'collapseRemember' => true,
+                                                                'collapseDefault'  => false,
+                                                                'isSolid'          => true,
+                                                                'boxTools'         => \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_status_', $(this).prop('checked') );"),
+                                                                'title'            => 'Status',
+                                                            ]);
+                    foreach ($statusmap as $status => $style) {
+                        echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_' . $status, $status, $style, false, 'updateItemTable()');
+                    }
 
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">Flags</div>
-                        <div class="panel-body">
-                            <button class="btn btn-info" onclick="btnResetFlags()">Reset</button>
-                            <?php
-                            foreach ($specialFlags as $name) {
-                                echo '
-                            <button class="btn btn-warning" onclick="btn'.ucwords($name).'()">'.$name.'</button>';
-                            }
-                            ?>
-                            <br/>
-                            <?php
-                            foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-                                echo \DbTools\helper\HelperView::getSwitchCheckbox('switch_filter_flags_' . $name, $name, 'default');
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
+                    \insolita\wgadminlte\CollapseBox::end();
+                }
+
+                {
+                    \insolita\wgadminlte\CollapseBox::begin([
+                                                                'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
+                                                                'collapseRemember' => true,
+                                                                'collapseDefault'  => false,
+                                                                'isSolid'          => true,
+                                                                'boxTools'         => \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_type_', $(this).prop('checked') );"),
+                                                                'title'            => 'Type',
+                                                            ]);
+                    foreach ($types as $type) {
+                        echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_' . $type, $type, 'default', false, 'updateItemTable()');
+                    }
+
+                    \insolita\wgadminlte\CollapseBox::end();
+                }
+
+                {
+                    $boxTools = '<button class="btn btn-info" onclick="btnResetFlags()">Reset</button>';
+                    foreach ($specialFlags as $name) {
+                        $boxTools .= '
+                        <button class="btn btn-warning" onclick="btn' . ucwords($name) . '()">' . $name . '</button>';
+                    }
+                    \insolita\wgadminlte\CollapseBox::begin([
+                                                                'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
+                                                                'collapseRemember' => true,
+                                                                'collapseDefault'  => false,
+                                                                'isSolid'          => true,
+                                                                'boxTools'         => $boxTools,
+                                                                'title'            => 'Flags',
+                                                            ]);
+                    foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
+                        echo \DbTools\helper\HelperView::getSwitchCheckbox('switch_filter_flags_' . $name, $name, 'default');
+                    }
+
+                    \insolita\wgadminlte\CollapseBox::end();
+                }
+
+                ?>
             </div>
             <div class="col">
                 <table id="itemtable" class="display compact" width="100%" cellspacing="0"></table>

@@ -1,33 +1,41 @@
 {
-    "name": "helmut-kleinhans/yii2-dbtools",
-    "description": "Yii2 Database Backup and Restore functionality",
-    "type": "yii2-extension",
-    "homepage": "https://github.com/helmut-kleinhans/yii2-dbtools",
-    "keywords": ["yii2","database", "backup", "restore", "dbtools"],
-    "license": "Apache-2.0",
-    "authors": [
-        {
-            "name": "Helmut Kleinhans",
-            "email": "q.q@gmail.com"
-        },
-        {
-            "name": "Roman Dreissker",
-            "email": "q.q@gmail.com"
-        }
-    ],
-    "require": {
-        "php": ">=7.0.0",
-        "yiisoft/yii2": "*",
-        "mkubenka/yii2-db-reconnect": "1.1.0"
+  "name": "helmut-kleinhans/yii2-dbtools",
+  "description": "Yii2 Database Backup and Restore functionality",
+  "type": "yii2-extension",
+  "homepage": "https://github.com/helmut-kleinhans/yii2-dbtools",
+  "keywords": [
+    "yii2",
+    "database",
+    "backup",
+    "restore",
+    "dbtools"
+  ],
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Helmut Kleinhans",
+      "email": "q.q@gmail.com"
     },
-    "autoload": {
-        "psr-4": {
-            "DbTools\\": "src/"
-        }
-    },
-    "extra": {
-        "asset-installer-paths": {
-            "bower-asset-library": "vendor/bower"
-        }
+    {
+      "name": "Roman Dreissker",
+      "email": "q.q@gmail.com"
     }
+  ],
+  "require": {
+    "php": ">=7.0.0",
+    "yiisoft/yii2": "*",
+    "yiisoft/yii2-jui": "*",
+    "mkubenka/yii2-db-reconnect": "1.1.0",
+    "insolita/yii2-adminlte-widgets": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "DbTools\\": "src/"
+    }
+  },
+  "extra": {
+    "asset-installer-paths": {
+      "bower-asset-library": "vendor/bower"
+    }
+  }
 }

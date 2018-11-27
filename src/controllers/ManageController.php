@@ -86,6 +86,10 @@ class ManageController extends Controller
             'data'   => $this->_getInfo(),
         ]);
     }
+    public function actionTest()
+    {
+        return $this->render('test', []);
+    }
 
     public function actionAjax()
     {

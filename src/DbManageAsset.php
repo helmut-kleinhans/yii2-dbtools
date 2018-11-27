@@ -7,14 +7,10 @@ use yii\web\JqueryAsset;
 
 class DbManageAsset extends AssetBundle
 {
-    public $sourcePath = '@vendor/helmut-kleinhans/yii2-dbtools/src/assets';
-    public $css = [];
-    public $depends = [//yii\web\JqueryAsset::className()
-    ];
-
     public function init()
     {
-        //$this->js[] = YII_DEBUG ? 'js/manage.js' : 'js/manage.min.js';
+        $this->sourcePath = __DIR__ . "/assets";
+
         $this->depends[] = JqueryAsset::className();
 
         $this->css[] = 'css/jquery.triSwitch.css';
@@ -33,5 +29,7 @@ class DbManageAsset extends AssetBundle
         $this->js[] = 'js/dataTables.bootstrap.min.js';
         $this->js[] = 'js/codemirror.js';
         $this->js[] = 'js/mergely.js';
+
+        parent::init();
     }
 }
