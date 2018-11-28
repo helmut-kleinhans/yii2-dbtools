@@ -48,82 +48,139 @@ if(isset($data['data'])) {
         color: #7f7f7f;
         text-decoration: line-through;
     }
+
+    .leftfc,
+    .rightfc {
+        height: calc(100vh - 49px);
+    }
+
+    .leftfc {
+        overflow-y: auto;
+        background-color: #eee;
+    }
+
+    .rightfc {
+        padding-right: 30px;
+	}
+    .tab-content {
+        height: calc(100vh - 105px);
+    }
+    .tab-pane {
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: 100%;
+    }
+
+    html {
+        overflow: hidden;
+    }
+
+    /* Auto-height fix */
+    .mergely-column .CodeMirror {
+        height: 100%;
+    }
+
+    .corner-ribbon-db,
+    .corner-ribbon-svn{
+        color: #f0f0f0;
+        width: 100px;
+        line-height: 25px;
+        text-align: center;
+        letter-spacing: 1px;
+        z-index: 10000;
+        position: absolute;
+        top: 0px;
+        font-weight: bold;
+    }
+
+    .corner-ribbon-svn{
+        left: -15px;
+        background: #f39c12;
+        transform: rotate(-45deg);
+        -webkit-transform: rotate(-45deg);
+    }
+
+    .corner-ribbon-db{
+        right: -15px;
+        background: #3c8dbc;
+        transform: rotate(45deg);
+        -webkit-transform: rotate(45deg);
+    }
+
 </style>
 
 <div class="row">
-    <div class="col-md-3">
-        <fieldset id="templates">
-            <div class="col">
-                <div class="form-group">
-                    <div class="input-group">
-                        <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
-                        <input type="text" id="i_filter_search" class="form-control" placeholder="Search">
-                    </div>
+    <div class="col-md-3 leftfc">
+        <div class="col">
+            <div class="form-group">
+                <div class="input-group">
+                    <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+                    <input type="text" id="i_filter_search" class="form-control" placeholder="Search">
                 </div>
             </div>
-            <div class="col">
-                <?php
-                {
-                    \insolita\wgadminlte\CollapseBox::begin([
-                                                                'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
-                                                                'collapseRemember' => true,
-                                                                'collapseDefault'  => false,
-                                                                'isSolid'          => true,
-                                                                'boxTools'         => \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_status_', $(this).prop('checked') );"),
-                                                                'title'            => 'Status',
-                                                            ]);
-                    foreach ($statusmap as $status => $style) {
-                        echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_' . $status, $status, $style, false, 'updateItemTable()');
-                    }
-
-                    \insolita\wgadminlte\CollapseBox::end();
+        </div>
+        <div class="col">
+            <?php
+            {
+                \insolita\wgadminlte\CollapseBox::begin([
+                                                            'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
+                                                            'collapseRemember' => true,
+                                                            'collapseDefault'  => false,
+                                                            'isSolid'          => true,
+                                                            'boxTools'         => \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_status_', $(this).prop('checked') );"),
+                                                            'title'            => 'Status',
+                                                        ]);
+                foreach ($statusmap as $status => $style) {
+                    echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_status_' . $status, $status, $style, false, 'updateItemTable()');
                 }
 
-                {
-                    \insolita\wgadminlte\CollapseBox::begin([
-                                                                'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
-                                                                'collapseRemember' => true,
-                                                                'collapseDefault'  => false,
-                                                                'isSolid'          => true,
-                                                                'boxTools'         => \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_type_', $(this).prop('checked') );"),
-                                                                'title'            => 'Type',
-                                                            ]);
-                    foreach ($types as $type) {
-                        echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_' . $type, $type, 'default', false, 'updateItemTable()');
-                    }
+                \insolita\wgadminlte\CollapseBox::end();
+            }
 
-                    \insolita\wgadminlte\CollapseBox::end();
+            {
+                \insolita\wgadminlte\CollapseBox::begin([
+                                                            'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
+                                                            'collapseRemember' => true,
+                                                            'collapseDefault'  => false,
+                                                            'isSolid'          => true,
+                                                            'boxTools'         => \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_all', 'change all', 'info', false, "cbSetAllChecked('cb_filter_type_', $(this).prop('checked') );"),
+                                                            'title'            => 'Type',
+                                                        ]);
+                foreach ($types as $type) {
+                    echo \DbTools\helper\HelperView::getFancyCheckbox('cb_filter_type_' . $type, $type, 'default', false, 'updateItemTable()');
                 }
 
-                {
-                    $boxTools = '<button class="btn btn-info" onclick="btnResetFlags()">Reset</button>';
-                    foreach ($specialFlags as $name) {
-                        $boxTools .= '
+                \insolita\wgadminlte\CollapseBox::end();
+            }
+
+            {
+                $boxTools = '<button class="btn btn-info" onclick="btnResetFlags()">Reset</button>';
+                foreach ($specialFlags as $name) {
+                    $boxTools .= '
                         <button class="btn btn-warning" onclick="btn' . ucwords($name) . '()">' . $name . '</button>';
-                    }
-                    \insolita\wgadminlte\CollapseBox::begin([
-                                                                'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
-                                                                'collapseRemember' => true,
-                                                                'collapseDefault'  => false,
-                                                                'isSolid'          => true,
-                                                                'boxTools'         => $boxTools,
-                                                                'title'            => 'Flags',
-                                                            ]);
-                    foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
-                        echo \DbTools\helper\HelperView::getSwitchCheckbox('switch_filter_flags_' . $name, $name, 'default');
-                    }
-
-                    \insolita\wgadminlte\CollapseBox::end();
+                }
+                \insolita\wgadminlte\CollapseBox::begin([
+                                                            'type'             => \insolita\wgadminlte\LteConst::TYPE_PRIMARY,
+                                                            'collapseRemember' => true,
+                                                            'collapseDefault'  => false,
+                                                            'isSolid'          => true,
+                                                            'boxTools'         => $boxTools,
+                                                            'title'            => 'Flags',
+                                                        ]);
+                foreach (\DbTools\db\schemas\DbSchemaBase::FLAGS_ALL as $name) {
+                    echo \DbTools\helper\HelperView::getSwitchCheckbox('switch_filter_flags_' . $name, $name, 'default');
                 }
 
-                ?>
-            </div>
-            <div class="col">
-                <table id="itemtable" class="display compact" width="100%" cellspacing="0"></table>
-            </div>
-        </fieldset>
+                \insolita\wgadminlte\CollapseBox::end();
+            }
+
+            ?>
+        </div>
+        <div class="col">
+            <table id="itemtable" class="display compact" width="100%" cellspacing="0"></table>
+        </div>
     </div>
-    <div class="col-md-9">
+    <div class="col-md-9 rightfc">
         <ul class="nav nav-tabs" id="contentTab">
             <li class="nav active"><a href="#A" data-toggle="tab">Info</a></li>
             <li class="nav"><a href="#B" data-toggle="tab">Diff</a></li>
@@ -148,17 +205,25 @@ if(isset($data['data'])) {
             </div>
             <div class="tab-pane area" id="B">
                 <div class="row">
-                    <div class="col-md-6">
-                        <label>SVN</label>
+                    <div class="col-md-1 text-center">
+                        <div class="corner-ribbon-svn">SVN</div>
+                    </div>
+                    <div class="col-md-4 text-left">
                         <button type="button" id="file2sql" class="btn btn-primary" onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql</button>
                         <button type="button" id="markAsRemoved" class="btn btn-danger" onclick="callHome('markAsRemoved')">mark as removed</button>
                         <button type="button" id="markAsNotRemoved" class="btn btn-warning" onclick="callHome('markAsNotRemoved')">mark as not removed</button>
                     </div>
-                    <div class="col-md-6">
-                        <label>DB</label>
+                    <div class="col-md-2 text-center">
+                        <button type="button" id="diffPrev" class="btn btn-info" onclick="mergelyScrollToDiff('prev')">▲</button>
+                        <button type="button" id="diffNext" class="btn btn-info" onclick="mergelyScrollToDiff('next')">▼</button>
+                    </div>
+                    <div class="col-md-4 text-right">
                         <button type="button" id="sql2file" class="btn btn-info" onclick="callHome('sql2file')">sql 2 file</button>
                         <button type="button" id="drop" class="btn btn-danger" onclick="callHome('drop','Are you sure you want to drop it?')">drop</button>
                         <button type="button" id="dropAndMarkAsRemoved" class="btn btn-warning" onclick="callHome('dropAndMarkAsRemoved','Are you sure you want to drop it?')">drop and mark as removed</button>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <div class="corner-ribbon-db">DB</div>
                     </div>
                 </div>
                 <div class="row">
@@ -295,13 +360,13 @@ $this->registerJs(<<<JS
             responsive: false,
             select: true,
             stateSave: true,
-            'stateSaveParams': function(settings, data) {
+            stateSaveParams: function(settings, data) {
                 data.columns.forEach(function (column) {
                     delete column.visible;
                 });
             },
             paging: true,
-            scrollY:        "600px",
+            scrollY:        "650px",
             scroller: true,
             sScrollX: false,
             data: dataTable,
@@ -408,11 +473,16 @@ $this->registerJs(<<<JS
         if(val == defval) return val;
         return val=='true';
     }
-
+    
+    function mergelyScrollToDiff(dir) {
+        $('#compare').mergely('scrollToDiff', dir);
+    }
+    
     $(document).ready(function () {
         $('#compare').mergely({
             width: 'auto',
-            height: 800,
+            editor_width: 'auto',
+            editor_height: 'calc(100vh - 170px)',
             cmsettings: {readOnly: true, lineNumbers: true}
         });
         $('#compare').mergely('resize', '');
@@ -646,7 +716,9 @@ $this->registerJs(<<<JS
                 buttonEnable($('#markAsRemoved'));
                 buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
-                buttonEnable($('#dropAndMarkAsRemoved'));                
+                buttonEnable($('#dropAndMarkAsRemoved'));  
+                buttonDisable($('#diffPrev'));
+                buttonDisable($('#diffNext'));
                 break;
             case 'missing':
                 buttonEnable($('#file2sql'));
@@ -655,6 +727,8 @@ $this->registerJs(<<<JS
                 buttonDisable($('#markAsNotRemoved'));
                 buttonDisable($('#drop'));
                 buttonDisable($('#dropAndMarkAsRemoved'));
+                buttonDisable($('#diffPrev'));
+                buttonDisable($('#diffNext'));
                 break;
             case 'new':
                 buttonDisable($('#file2sql'));
@@ -663,6 +737,8 @@ $this->registerJs(<<<JS
                 buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));
+                buttonDisable($('#diffPrev'));
+                buttonDisable($('#diffNext'));
                 break;
             case 'different':
                 buttonEnable($('#file2sql'));
@@ -671,6 +747,8 @@ $this->registerJs(<<<JS
                 buttonDisable($('#markAsNotRemoved'));
                 buttonEnable($('#drop'));
                 buttonEnable($('#dropAndMarkAsRemoved'));
+                buttonEnable($('#diffPrev'));
+                buttonEnable($('#diffNext'));
                 break;
             case 'removed':
                 buttonEnable($('#file2sql'));
@@ -678,10 +756,14 @@ $this->registerJs(<<<JS
                     buttonEnable($('#sql2file'));
                     buttonEnable($('#drop'));
                     buttonEnable($('#dropAndMarkAsRemoved'));
+                    buttonEnable($('#diffPrev'));
+                    buttonEnable($('#diffNext'));
                 } else {
                     buttonDisable($('#sql2file'));                    
                     buttonDisable($('#drop'));
                     buttonDisable($('#dropAndMarkAsRemoved'));
+                    buttonDisable($('#diffPrev'));
+                    buttonDisable($('#diffNext'));
                 }
                 buttonDisable($('#markAsRemoved'));
                 buttonEnable($('#markAsNotRemoved'));
@@ -694,10 +776,11 @@ $this->registerJs(<<<JS
                 buttonDisable($('#markAsNotRemoved'));
                 buttonDisable($('#drop'));
                 buttonDisable($('#dropAndMarkAsRemoved'));
+                buttonDisable($('#diffPrev'));
+                buttonDisable($('#diffNext'));
         }
         
     }
-
 JS
 ,$this::POS_END);
 
