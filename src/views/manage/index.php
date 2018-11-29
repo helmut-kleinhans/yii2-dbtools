@@ -366,7 +366,7 @@ $this->registerJs(<<<JS
                 });
             },
             paging: true,
-            scrollY:        "650px",
+            scrollY:        "550px",
             scroller: true,
             sScrollX: false,
             data: dataTable,
