@@ -334,18 +334,6 @@ if (isset($data['data'])) {
                 </div>
             </div>
             <div class="tab-pane area" id="B">
-                <div class="headSvn">
-                    <div class="corner-ribbon-svn">SVN</div>
-                    <button type="button" id="file2sql" class="btn btn-primary btn-sm"
-                            onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql
-                    </button>
-                    <button type="button" id="markAsRemoved" class="btn btn-danger btn-sm"
-                            onclick="callHome('markAsRemoved')">mark as removed
-                    </button>
-                    <button type="button" id="markAsNotRemoved" class="btn btn-warning btn-sm"
-                            onclick="callHome('markAsNotRemoved')">mark as not removed
-                    </button>
-                </div>
                 <div class="headMergely">
                     <button type="button" id="diffPrev" title="Previous diff" class="btn btn-info btn-sm" onclick="mergelyChange('scrollToDiff', 'prev')">
                         <span class="glyphicon glyphicon-chevron-up"></span>
@@ -359,6 +347,18 @@ if (isset($data['data'])) {
                         echo \DbTools\helper\HelperView::getFancyCheckbox('cb_mergely_'.$c['option'], $c['label'], $c['style'], $c['default'], 'mergelyChange(\'options\', { '.$c['option'].': $(this).prop(\'checked\') } )');
                     }
                     ?>
+                </div>
+                <div class="headSvn">
+                    <div class="corner-ribbon-svn">SVN</div>
+                    <button type="button" id="file2sql" class="btn btn-primary btn-sm"
+                            onclick="callHome('file2sql','Are you sure you want to execute it')">file 2 sql
+                    </button>
+                    <button type="button" id="markAsRemoved" class="btn btn-danger btn-sm"
+                            onclick="callHome('markAsRemoved')">mark as removed
+                    </button>
+                    <button type="button" id="markAsNotRemoved" class="btn btn-warning btn-sm"
+                            onclick="callHome('markAsNotRemoved')">mark as not removed
+                    </button>
                 </div>
                 <div class="headDb">
                     <div class="corner-ribbon-db">DB</div>
@@ -453,6 +453,7 @@ $this->registerJs(<<<JS
     function  filterReset() {
         $('#i_filter_search').val('');
         table.search('').draw() ;
+        $settingsSave_Filter_Search
         cbSetAllChecked('cb_filter_status_',true);
         cbSetAllChecked('cb_filter_type_',true);
         btnResetFlags();
