@@ -8,7 +8,7 @@ class HelperView
 {
     public static function getFancyCheckbox(string $id, string $label, string $style, bool $checked = false, string $onclick = ''): string
     {
-        return '<label for="' . $id . '" class="btn btn-' . $style . '" style="padding: 0.2em 0.5em; margin:0.2em;">' . $label . '
+        return '<label for="' . $id . '" class="btn btn-' . $style . ' btn-sm">' . $label . '
                     <input type="checkbox" id="' . $id . '" class="badgebox"' . (empty($onclick) ? '' : ' onclick="' . $onclick . '"') . (empty($checked) ? '' : ' checked="checked"') . ' style="display:none;" />
                     <span class="badge" style="left:2px;">&check;</span>
                 </label>';
@@ -16,7 +16,7 @@ class HelperView
 
     public static function getSwitchCheckbox(string $id, string $label, string $style): string
     {
-        return '<label for="' . $id . '" class="btn btn-' . $style . '" style="padding: 0.2em 0.5em; margin:0.2em;">' . $label . '
+        return '<label for="' . $id . '" class="btn btn-' . $style . ' btn-sm">' . $label . '
                     <input type="checkbox" id="' . $id . '" data-jtmulti-state/>
                 </label>';
     }
