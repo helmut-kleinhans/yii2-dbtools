@@ -12,7 +12,8 @@ $statusmap = [
     'new'       => 'primary',
     'missing'   => 'danger',
     'different' => 'warning',
-    'removed'   => 'default',
+    'removed'   => 'default status-removed',
+    'dropable'   => 'default status-dropable',
 ];
 
 $specialFlags = [
@@ -78,10 +79,32 @@ if (isset($data['data'])) {
 
 <style type="text/css" media="screen">
 
-    .text-default {
+    .contFilter .status-removed {
+        color: #ffffff;
+        background-color: #7f7f7f;
+    }
+    .contItemTable .status-removed {
         color: #7f7f7f;
         text-decoration: line-through;
     }
+    .status-removed .badge {
+        background-color: #ffffff;
+        color: #7f7f7f;
+    }
+
+    .contFilter .status-dropable {
+        color: #ffffff;
+        background-color: #800080;
+    }
+    .contItemTable .status-dropable {
+        color: #800080;
+        text-decoration: line-through;
+    }
+    .status-dropable .badge {
+        background-color: #ffffff;
+        color: #800080;
+    }
+
     .cont{
         display: flex;
         flex:1;
@@ -459,10 +482,6 @@ $this->registerJs(<<<JS
         btnResetFlags();
     }
     
-    function checkRemoved(rowData) { 
-        return rowData.status!='removed' || rowData.createdb !='';
-    }    
-    
     function checkFlags(rowData) {
         var value = rowData.flags;
         
@@ -474,7 +493,6 @@ $this->registerJs(<<<JS
     /* Custom filtering function which will search data in column four between two values */
     $.fn.dataTable.ext.search.push(
         function( settings, searchData, index, rowData, counter ) {
-            /*if(!checkRemoved(rowData)) return false;*/
             if(!$('#cb_filter_status_'+rowData.status).prop("checked")) return false;
             if(!$('#cb_filter_type_'+rowData.group).prop("checked")) return false;
             if(!checkFlags(rowData)) return false;
@@ -916,19 +934,21 @@ $this->registerJs(<<<JS
                 break;
             case 'removed':
                 buttonEnable($('#file2sql'));
-                if(CurItem.createdb != '') {
-                    buttonEnable($('#sql2file'));
-                    buttonEnable($('#drop'));
-                    buttonEnable($('#dropAndMarkAsRemoved'));
-                    buttonEnable($('#diffPrev'));
-                    buttonEnable($('#diffNext'));
-                } else {
-                    buttonDisable($('#sql2file'));                    
-                    buttonDisable($('#drop'));
-                    buttonDisable($('#dropAndMarkAsRemoved'));
-                    buttonDisable($('#diffPrev'));
-                    buttonDisable($('#diffNext'));
-                }
+                buttonDisable($('#sql2file'));                    
+                buttonDisable($('#drop'));
+                buttonDisable($('#dropAndMarkAsRemoved'));
+                buttonDisable($('#diffPrev'));
+                buttonDisable($('#diffNext'));
+                buttonDisable($('#markAsRemoved'));
+                buttonEnable($('#markAsNotRemoved'));
+                break;
+            case 'dropable':
+                buttonEnable($('#file2sql'));
+                buttonEnable($('#sql2file'));
+                buttonEnable($('#drop'));
+                buttonEnable($('#dropAndMarkAsRemoved'));
+                buttonEnable($('#diffPrev'));
+                buttonEnable($('#diffNext'));
                 buttonDisable($('#markAsRemoved'));
                 buttonEnable($('#markAsNotRemoved'));
                 break;

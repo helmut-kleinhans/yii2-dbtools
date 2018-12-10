@@ -22,7 +22,6 @@ class DbSchemaBase
     const FLAGS_SELECT = 'select';
     const FLAGS_USEDBY = 'used_by';
     const FLAGS_CONSTANT = 'constant';
-    const FLAGS_DROPABLE = 'dropable';
     const FLAGS_ALL = [
         self::FLAGS_WARNING,
         self::FLAGS_DEPRECATED,
@@ -34,7 +33,6 @@ class DbSchemaBase
         self::FLAGS_SELECT,
         self::FLAGS_USEDBY,
         self::FLAGS_CONSTANT,
-        self::FLAGS_DROPABLE,
     ];
     /** @var string */
     public $dbName;
@@ -329,10 +327,6 @@ class DbSchemaBase
             else {
                 $result[$name]['warnings'] = '';
             }
-
-            if(self::isRemoved($result[$name]['createfile']) && !empty($result[$name]['createdb'])) {
-                $result[$name]['flags'][self::FLAGS_DROPABLE] = 1;
-            }
         }
 
         return $result;
@@ -419,7 +413,11 @@ class DbSchemaBase
         }
 
         if (self::isRemoved($createFile)) {
-            return 'removed';
+            if(!empty($createDb)) {
+                return 'dropable';
+            } else {
+                return 'removed';
+            }
         }
         if ($createDb == $createFile) {
             return 'ok';
